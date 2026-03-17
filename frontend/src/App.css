@@ -182,3 +182,30 @@
     border-right-color: var(--border);
   }
 }
+nav {
+  display: flex;
+  gap: 20px;          /* расстояние между ссылками */
+  padding: 15px;
+  background-color: #f5f5f5;
+  align-items: center;
+}
+
+nav a, nav button {
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+nav button {
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+}
+
+nav button:hover {
+  background-color: #0056b3;
+}
