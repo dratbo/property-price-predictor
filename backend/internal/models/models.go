@@ -38,6 +38,14 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
+type PropertyListResponse struct {
+	Items      []*Property `json:"items"`
+	Total      int         `json:"total"`
+	Page       int         `json:"page"`
+	Limit      int         `json:"limit"`
+	TotalPages int         `json:"total_pages"`
+}
+
 type CreatePropertyRequest struct {
 	Address      string  `json:"address"`
 	City         string  `json:"city"`

@@ -8,7 +8,7 @@ import (
 
 type PropertyRepository interface {
 	Create(property *models.Property) error
-	GetAll() ([]*models.Property, error)
+	GetPage(page, limit int, city string) ([]*models.Property, int, error)
 	GetByID(id int) (*models.Property, error)
 }
 
@@ -35,14 +35,31 @@ func (r *InMemoryPropertyRepo) Create(prop *models.Property) error {
 	return nil
 }
 
-func (r *InMemoryPropertyRepo) GetAll() ([]*models.Property, error) {
+func (r *InMemoryPropertyRepo) GetPage(page, limit int, city string) ([]*models.Property, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	result := make([]*models.Property, 0, len(r.props))
+	all := make([]*models.Property, 0, len(r.props))
 	for _, p := range r.props {
-		result = append(result, p)
+		if city == "" || p.City == city {
+			all = append(all, p)
+		}
 	}
-	return result, nil
+	total := len(all)
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+	if offset >= total {
+		return []*models.Property{}, total, nil
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return all[offset:end], total, nil
 }
 
 func (r *InMemoryPropertyRepo) GetByID(id int) (*models.Property, error) {

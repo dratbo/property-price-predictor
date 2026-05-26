@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -59,7 +60,20 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PropertyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	props, err := h.propertyRepo.GetAll()
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	city := r.URL.Query().Get("city")
+
+	props, total, err := h.propertyRepo.GetPage(page, limit, city)
 	if err != nil {
 		http.Error(w, "failed to get properties", http.StatusInternalServerError)
 		return
@@ -67,7 +81,17 @@ func (h *PropertyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if props == nil {
 		props = []*models.Property{}
 	}
-	json.NewEncoder(w).Encode(props)
+	totalPages := 0
+	if total > 0 {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
+	json.NewEncoder(w).Encode(models.PropertyListResponse{
+		Items:      props,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	})
 }
 
 func (h *PropertyHandler) GetByID(w http.ResponseWriter, r *http.Request) {

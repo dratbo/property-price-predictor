@@ -50,11 +50,40 @@ func (r *PgPropertyRepo) Create(property *models.Property) error {
 	return err
 }
 
-func (r *PgPropertyRepo) GetAll() ([]*models.Property, error) {
+func (r *PgPropertyRepo) GetPage(page, limit int, city string) ([]*models.Property, int, error) {
 	ctx := context.Background()
-	rows, err := r.pool.Query(ctx, `SELECT `+propertyColumns+` FROM properties ORDER BY id DESC`)
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
+	var total int
+	var err error
+	if city == "" {
+		err = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM properties`).Scan(&total)
+	} else {
+		err = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM properties WHERE city = $1`, city).Scan(&total)
+	}
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	var query string
+	var args []any
+	if city == "" {
+		query = `SELECT ` + propertyColumns + ` FROM properties ORDER BY id DESC LIMIT $1 OFFSET $2`
+		args = []any{limit, offset}
+	} else {
+		query = `SELECT ` + propertyColumns + ` FROM properties WHERE city = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`
+		args = []any{city, limit, offset}
+	}
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -62,11 +91,11 @@ func (r *PgPropertyRepo) GetAll() ([]*models.Property, error) {
 	for rows.Next() {
 		p, err := scanProperty(rows)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		result = append(result, p)
 	}
-	return result, rows.Err()
+	return result, total, rows.Err()
 }
 
 func (r *PgPropertyRepo) GetByID(id int) (*models.Property, error) {
