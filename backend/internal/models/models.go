@@ -5,56 +5,76 @@ import "time"
 type User struct {
 	ID           int       `json:"id"`
 	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"` // не возвращаем в JSON
+	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Property struct {
-	ID        int       `json:"id"`
-	Address   string    `json:"address"`
-	Area      float64   `json:"area"`  // площадь
-	Rooms     int       `json:"rooms"` // количество комнат
-	Price     float64   `json:"price"` // цена
-	CreatedAt time.Time `json:"created_at"`
+	ID           int       `json:"id"`
+	Address      string    `json:"address"`
+	City         string    `json:"city"`
+	District     *string   `json:"district,omitempty"`
+	Metro        *string   `json:"metro,omitempty"`
+	Area         float64   `json:"area"`
+	Rooms        int       `json:"rooms"`
+	Floor        *int      `json:"floor,omitempty"`
+	TotalFloors  *int      `json:"total_floors,omitempty"`
+	BuildingType *string   `json:"building_type,omitempty"`
+	YearBuilt    *int      `json:"year_built,omitempty"`
+	Developer    *string   `json:"developer,omitempty"`
+	RepairType   *string   `json:"repair_type,omitempty"`
+	Price        float64   `json:"price"`
+	SourceURL    *string   `json:"source_url,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// Запрос на регистрацию/логин
 type AuthRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// Ответ с токеном
 type AuthResponse struct {
 	Token string `json:"token"`
 }
 
-// Запрос на создание объекта
 type CreatePropertyRequest struct {
-	Address string  `json:"address"`
-	Area    float64 `json:"area"`
-	Rooms   int     `json:"rooms"`
-	Price   float64 `json:"price"`
+	Address      string  `json:"address"`
+	City         string  `json:"city"`
+	District     *string `json:"district,omitempty"`
+	Metro        *string `json:"metro,omitempty"`
+	Area         float64 `json:"area"`
+	Rooms        int     `json:"rooms"`
+	Floor        *int    `json:"floor,omitempty"`
+	TotalFloors  *int    `json:"total_floors,omitempty"`
+	BuildingType *string `json:"building_type,omitempty"`
+	YearBuilt    *int    `json:"year_built,omitempty"`
+	Developer    *string `json:"developer,omitempty"`
+	RepairType   *string `json:"repair_type,omitempty"`
+	Price        float64 `json:"price"`
+	SourceURL    *string `json:"source_url,omitempty"`
 }
 
-// Запрос на предсказание
 type PredictRequest struct {
-	Area  float64 `json:"area"`
-	Rooms int     `json:"rooms"`
+	Area         float64 `json:"area"`
+	Rooms        int     `json:"rooms"`
+	City         string  `json:"city"`
+	District     *string `json:"district,omitempty"`
+	Metro        *string `json:"metro,omitempty"`
+	Floor        *int    `json:"floor,omitempty"`
+	TotalFloors  *int    `json:"total_floors,omitempty"`
+	BuildingType *string `json:"building_type,omitempty"`
+	YearBuilt    *int    `json:"year_built,omitempty"`
+	Developer    *string `json:"developer,omitempty"`
+	RepairType   *string `json:"repair_type,omitempty"`
 }
 
 type PredictResponse struct {
 	PredictedPrice float64 `json:"predicted_price"`
 }
 
-// Избранное (связь пользователя и объекта)
 type Favorite struct {
 	UserID     int       `json:"user_id"`
 	PropertyID int       `json:"property_id"`
 	CreatedAt  time.Time `json:"created_at"`
-}
-
-// Запрос на добавление в избранное (если нужно, но обычно просто ID в URL)
-type FavoriteRequest struct {
-	PropertyID int `json:"property_id"`
 }

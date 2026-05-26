@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: property
+      POSTGRES_PASSWORD: property
+      POSTGRES_DB: property_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./db/seed_extended_regions.sql:/docker-entrypoint-initdb.d/02_seed_extended.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U property -d property_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build: ./ml-service
+    environment:
+      DATABASE_URL: postgres://property:property@postgres:5432/property_db
+      MODEL_PATH: /app/models/price_model.joblib
+      RETRAIN_EVERY_N: "100"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ml_models:/app/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  go-backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://property:property@postgres:5432/property_db?sslmode=disable
+      JWT_SECRET: change-me-in-production
+      ML_SERVICE_URL: http://ml-service:8000
+      PORT: "8080"
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+
+  parser:
+    build: ./parser-service
+    environment:
+      DATABASE_URL: postgres://property:property@postgres:5432/property_db
+      PARSER_INTERVAL_HOURS: "24"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["python", "scheduler.py"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8080/api
+    ports:
+      - "5173:80"
+    depends_on:
+      - go-backend
+
+volumes:
+  postgres_data:
+  ml_models:

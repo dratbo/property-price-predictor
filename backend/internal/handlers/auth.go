@@ -12,15 +12,13 @@ import (
 	"github.com/dratbo/property-price-predictor/backend/internal/repository"
 )
 
-// Секретный ключ для JWT (в реальном проекте берите из переменных окружения)
-var jwtSecret = []byte("your-secret-key")
-
 type AuthHandler struct {
-	userRepo repository.UserRepository
+	userRepo  repository.UserRepository
+	jwtSecret []byte
 }
 
-func NewAuthHandler(ur repository.UserRepository) *AuthHandler {
-	return &AuthHandler{userRepo: ur}
+func NewAuthHandler(ur repository.UserRepository, jwtSecret []byte) *AuthHandler {
+	return &AuthHandler{userRepo: ur, jwtSecret: jwtSecret}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -30,14 +28,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем, не занят ли email
 	existing, _ := h.userRepo.FindByEmail(req.Email)
 	if existing != nil {
 		http.Error(w, "user already exists", http.StatusConflict)
 		return
 	}
 
-	// Хешируем пароль
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -48,7 +44,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email:        req.Email,
 		PasswordHash: string(hash),
 	}
-
 	if err := h.userRepo.Create(user); err != nil {
 		http.Error(w, "failed to create user", http.StatusInternalServerError)
 		return
@@ -76,12 +71,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Генерируем JWT-токен
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
 		"exp":     time.Now().Add(24 * time.Hour).Unix(),
 	})
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := token.SignedString(h.jwtSecret)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

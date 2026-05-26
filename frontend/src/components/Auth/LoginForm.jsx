@@ -15,24 +15,24 @@ const LoginForm = () => {
         if (result.success) {
             navigate('/properties');
         } else {
-            setError(result.error);
+            setError(typeof result.error === 'string' ? result.error : 'Ошибка входа');
         }
     };
 
     return (
-        <div className="auth-form">
-            <h2>Login</h2>
+        <div className="auth-form page-container">
+            <h2>Вход</h2>
             {error && <p className="error">{error}</p>}
             <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Email:</label>
+                <label>
+                    Email
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div>
-                    <label>Password:</label>
+                </label>
+                <label>
+                    Пароль
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-                <button type="submit">Login</button>
+                </label>
+                <button type="submit" className="btn-primary">Войти</button>
             </form>
         </div>
     );

@@ -2,13 +2,14 @@ package repository
 
 import (
 	"sync"
+
+	"github.com/dratbo/property-price-predictor/backend/internal/models"
 )
 
 type FavoriteRepository interface {
 	Add(userID, propertyID int) error
 	Remove(userID, propertyID int) error
-	GetByUser(userID int) ([]int, error) // возвращает список ID свойств
-	IsFavorite(userID, propertyID int) (bool, error)
+	GetPropertiesByUser(userID int) ([]*models.Property, error)
 }
 
 type InMemoryFavoriteRepo struct {
@@ -45,27 +46,6 @@ func (r *InMemoryFavoriteRepo) Remove(userID, propertyID int) error {
 	return nil
 }
 
-func (r *InMemoryFavoriteRepo) GetByUser(userID int) ([]int, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	userFavs, ok := r.favorites[userID]
-	if !ok {
-		return []int{}, nil
-	}
-	result := make([]int, 0, len(userFavs))
-	for pid := range userFavs {
-		result = append(result, pid)
-	}
-	return result, nil
-}
-
-func (r *InMemoryFavoriteRepo) IsFavorite(userID, propertyID int) (bool, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	userFavs, ok := r.favorites[userID]
-	if !ok {
-		return false, nil
-	}
-	_, exists := userFavs[propertyID]
-	return exists, nil
+func (r *InMemoryFavoriteRepo) GetPropertiesByUser(userID int) ([]*models.Property, error) {
+	return nil, nil
 }

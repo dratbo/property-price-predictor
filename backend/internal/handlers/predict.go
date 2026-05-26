@@ -1,21 +1,26 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/dratbo/property-price-predictor/backend/internal/ml"
 	"github.com/dratbo/property-price-predictor/backend/internal/models"
-	"github.com/dratbo/property-price-predictor/backend/internal/repository"
 )
 
 type PredictHandler struct {
-	propRepo repository.PropertyRepository
+	mlServiceURL string
+	httpClient   *http.Client
 }
 
-func NewPredictHandler(pr repository.PropertyRepository) *PredictHandler {
-	return &PredictHandler{propRepo: pr}
+func NewPredictHandler(mlServiceURL string) *PredictHandler {
+	return &PredictHandler{
+		mlServiceURL: mlServiceURL,
+		httpClient:   &http.Client{Timeout: 60 * time.Second},
+	}
 }
 
 func (h *PredictHandler) Predict(w http.ResponseWriter, r *http.Request) {
@@ -24,27 +29,35 @@ func (h *PredictHandler) Predict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-
-	props, err := h.propRepo.GetAll()
-	if err != nil {
-		http.Error(w, "failed to get properties", http.StatusInternalServerError)
+	if req.Area <= 0 || req.Rooms <= 0 || req.City == "" {
+		http.Error(w, "area, rooms and city are required", http.StatusBadRequest)
 		return
 	}
 
-	// Логируем количество полученных объектов
-	log.Printf("Number of properties for prediction: %d", len(props))
-	// Логируем каждый объект (для отладки)
-	for i, p := range props {
-		log.Printf("Property %d: ID=%d Area=%.2f Rooms=%d Price=%.2f", i, p.ID, p.Area, p.Rooms, p.Price)
-	}
-
-	predictor := ml.NewPredictor(props)
-	price, err := predictor.Predict(req.Area, req.Rooms)
+	body, err := json.Marshal(req)
 	if err != nil {
-		log.Printf("Prediction error: %v", err)
-		http.Error(w, "prediction failed: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(models.PredictResponse{PredictedPrice: price})
+	resp, err := h.httpClient.Post(
+		h.mlServiceURL+"/predict",
+		"application/json",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		log.Printf("ML service error: %v", err)
+		http.Error(w, `{"detail":"ml service unavailable"}`, http.StatusServiceUnavailable)
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	w.Header().Set("Content-Type", "application/json")
+	if resp.StatusCode != http.StatusOK {
+		w.WriteHeader(resp.StatusCode)
+		w.Write(respBody)
+		return
+	}
+	w.Write(respBody)
 }

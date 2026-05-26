@@ -21,17 +21,17 @@ const FavoritesList = () => {
     const removeFavorite = async (propertyId) => {
         try {
             await API.delete(`/favorites/${propertyId}`);
-            setFavorites(favorites.filter(p => p.id !== propertyId));
+            setFavorites(favorites.filter((p) => p.id !== propertyId));
         } catch (error) {
             console.error('Failed to remove favorite', error);
         }
     };
 
     return (
-        <div className="favorites-list">
-            <h2>My Favorites</h2>
+        <div className="favorites-list page-container">
+            <h2>Избранное</h2>
             <div className="properties-grid">
-                {favorites.map(property => (
+                {favorites.map((property) => (
                     <PropertyCard
                         key={property.id}
                         property={property}
@@ -40,6 +40,7 @@ const FavoritesList = () => {
                     />
                 ))}
             </div>
+            {favorites.length === 0 && <p>Избранных объектов пока нет.</p>}
         </div>
     );
 };
