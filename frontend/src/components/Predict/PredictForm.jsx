@@ -5,6 +5,7 @@ import { optionalChoice, resetCityFilterFields } from '../../constants/propertyO
 import { useCityFilters } from '../../hooks/useCityFilters';
 import FilterSelect from '../common/FilterSelect';
 import PredictDashboard from './PredictDashboard';
+import { useLocation } from 'react-router-dom';
 import {
     MAX_FLOOR,
     MAX_TOTAL_FLOORS,
@@ -21,7 +22,7 @@ import {
 } from '../../utils/validateYear';
 
 const PredictForm = () => {
-    const [form, setForm] = useState({
+    const DEFAULT_FORM = {
         area: '50',
         rooms: '2',
         city: 'Москва',
@@ -33,18 +34,48 @@ const PredictForm = () => {
         developer: '',
         repair_type: '',
         building_repair_type: '',
-    });
+    };
+
+    const [form, setForm] = useState(DEFAULT_FORM);
     const [result, setResult] = useState(null);
     const [cityStats, setCityStats] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [mlStatus, setMlStatus] = useState(null);
     const { filters, loading: filtersLoading } = useCityFilters(form.city);
+    const location = useLocation();
 
     useEffect(() => {
         loadAnalytics();
         checkML();
     }, []);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const city = params.get('city');
+        const area = params.get('area');
+        const rooms = params.get('rooms');
+
+        // Нужны минимум 3 поля, которые обязательны для запроса к ML.
+        if (!city || !area || !rooms) return;
+
+        setForm({
+            ...DEFAULT_FORM,
+            city,
+            area,
+            rooms,
+            district: params.get('district') ?? '',
+            floor: params.get('floor') ?? '',
+            total_floors: params.get('total_floors') ?? '',
+            building_type: params.get('building_type') ?? '',
+            year_built: params.get('year_built') ?? '',
+            developer: params.get('developer') ?? '',
+            repair_type: params.get('repair_type') ?? '',
+            building_repair_type: params.get('building_repair_type') ?? '',
+        });
+        setError('');
+        setResult(null);
+    }, [location.search]);
 
     const loadAnalytics = async () => {
         try {

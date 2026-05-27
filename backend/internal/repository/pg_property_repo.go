@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -50,7 +52,48 @@ func (r *PgPropertyRepo) Create(property *models.Property) error {
 	return err
 }
 
-func (r *PgPropertyRepo) GetPage(page, limit int, city string) ([]*models.Property, int, error) {
+func buildListWhere(filters models.PropertyListFilters) (string, []any) {
+	clauses := []string{"1=1"}
+	args := []any{}
+	n := 1
+
+	addEq := func(column, value string) {
+		if value == "" {
+			return
+		}
+		clauses = append(clauses, fmt.Sprintf("%s = $%d", column, n))
+		args = append(args, value)
+		n++
+	}
+	addEqInt := func(column string, value *int) {
+		if value == nil {
+			return
+		}
+		clauses = append(clauses, fmt.Sprintf("%s = $%d", column, n))
+		args = append(args, *value)
+		n++
+	}
+
+	addEq("city", filters.City)
+	addEq("district", filters.District)
+	addEq("building_type", filters.BuildingType)
+	addEq("developer", filters.Developer)
+	addEq("repair_type", filters.RepairType)
+	addEq("building_repair_type", filters.BuildingRepairType)
+	addEqInt("rooms", filters.Rooms)
+	addEqInt("floor", filters.Floor)
+	addEqInt("total_floors", filters.TotalFloors)
+	addEqInt("year_built", filters.YearBuilt)
+	if filters.Area != nil {
+		clauses = append(clauses, fmt.Sprintf("ROUND(area::numeric) = $%d", n))
+		args = append(args, int(*filters.Area+0.5))
+		n++
+	}
+
+	return strings.Join(clauses, " AND "), args
+}
+
+func (r *PgPropertyRepo) GetPage(page, limit int, filters models.PropertyListFilters) ([]*models.Property, int, error) {
 	ctx := context.Background()
 	if page < 1 {
 		page = 1
@@ -60,28 +103,22 @@ func (r *PgPropertyRepo) GetPage(page, limit int, city string) ([]*models.Proper
 	}
 	offset := (page - 1) * limit
 
+	where, args := buildListWhere(filters)
+
 	var total int
-	var err error
-	if city == "" {
-		err = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM properties`).Scan(&total)
-	} else {
-		err = r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM properties WHERE city = $1`, city).Scan(&total)
-	}
-	if err != nil {
+	countSQL := `SELECT COUNT(*) FROM properties WHERE ` + where
+	if err := r.pool.QueryRow(ctx, countSQL, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	var query string
-	var args []any
-	if city == "" {
-		query = `SELECT ` + propertyColumns + ` FROM properties ORDER BY id DESC LIMIT $1 OFFSET $2`
-		args = []any{limit, offset}
-	} else {
-		query = `SELECT ` + propertyColumns + ` FROM properties WHERE city = $1 ORDER BY id DESC LIMIT $2 OFFSET $3`
-		args = []any{city, limit, offset}
-	}
+	listArgs := append([]any{}, args...)
+	listArgs = append(listArgs, limit, offset)
+	limitPos := len(args) + 1
+	offsetPos := len(args) + 2
+	query := `SELECT ` + propertyColumns + ` FROM properties WHERE ` + where +
+		fmt.Sprintf(` ORDER BY id DESC LIMIT $%d OFFSET $%d`, limitPos, offsetPos)
 
-	rows, err := r.pool.Query(ctx, query, args...)
+	rows, err := r.pool.Query(ctx, query, listArgs...)
 	if err != nil {
 		return nil, 0, err
 	}

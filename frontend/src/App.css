@@ -54,6 +54,87 @@ nav {
   align-items: center;
 }
 
+.bell-wrap {
+  position: relative;
+}
+
+.btn-bell {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+
+.btn-bell:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.bell-dropdown {
+  position: absolute;
+  top: 46px;
+  left: 0;
+  width: 320px;
+  max-height: 340px;
+  overflow-y: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+  z-index: 10;
+  padding: 0.5rem;
+}
+
+.bell-dropdown p {
+  margin: 0.35rem;
+  color: var(--muted);
+}
+
+.bell-dropdown .bell-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-decoration: none;
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+}
+
+.bell-dropdown .bell-item:hover {
+  background: #f1f5f9;
+}
+
+.bell-dropdown .bell-item strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.bell-dropdown .bell-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 nav a {
   text-decoration: none;
   color: #ffffff;

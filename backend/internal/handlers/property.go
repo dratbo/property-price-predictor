@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/dratbo/property-price-predictor/backend/internal/constants"
@@ -70,6 +71,47 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(prop)
 }
 
+func parseOptionalIntQuery(q url.Values, key string) *int {
+	v := q.Get(key)
+	if v == "" {
+		return nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return nil
+	}
+	return &n
+}
+
+func parseOptionalFloatQuery(q url.Values, key string) *float64 {
+	v := q.Get(key)
+	if v == "" {
+		return nil
+	}
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil
+	}
+	return &n
+}
+
+func parsePropertyListFilters(r *http.Request) models.PropertyListFilters {
+	q := r.URL.Query()
+	return models.PropertyListFilters{
+		City:               q.Get("city"),
+		District:           q.Get("district"),
+		BuildingType:       q.Get("building_type"),
+		Developer:          q.Get("developer"),
+		RepairType:         q.Get("repair_type"),
+		BuildingRepairType: q.Get("building_repair_type"),
+		Rooms:              parseOptionalIntQuery(q, "rooms"),
+		Area:               parseOptionalFloatQuery(q, "area"),
+		Floor:              parseOptionalIntQuery(q, "floor"),
+		TotalFloors:        parseOptionalIntQuery(q, "total_floors"),
+		YearBuilt:          parseOptionalIntQuery(q, "year_built"),
+	}
+}
+
 func (h *PropertyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
@@ -82,9 +124,9 @@ func (h *PropertyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	if limit > 100 {
 		limit = 100
 	}
-	city := r.URL.Query().Get("city")
+	listFilters := parsePropertyListFilters(r)
 
-	props, total, err := h.propertyRepo.GetPage(page, limit, city)
+	props, total, err := h.propertyRepo.GetPage(page, limit, listFilters)
 	if err != nil {
 		http.Error(w, "failed to get properties", http.StatusInternalServerError)
 		return

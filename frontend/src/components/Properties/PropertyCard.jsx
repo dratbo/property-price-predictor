@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
+const PropertyCard = ({ property, isFavorite, onToggleFavorite, onPredict }) => {
     return (
         <div className="property-card">
             <h3>
@@ -10,6 +10,11 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
             <p className="property-city">{property.city}{property.district ? `, ${property.district}` : ''}</p>
             <p>Площадь: {property.area} м² · Комнат: {property.rooms}</p>
             <p className="property-price">{Number(property.price).toLocaleString('ru-RU')} ₽</p>
+            {onPredict && (
+                <button className="btn-primary" onClick={() => onPredict(property)}>
+                    Прогноз
+                </button>
+            )}
             {onToggleFavorite && (
                 <button className="btn-secondary" onClick={() => onToggleFavorite(property.id)}>
                     {isFavorite ? 'Убрать из избранного' : 'В избранное'}

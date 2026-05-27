@@ -8,7 +8,7 @@ import (
 
 type PropertyRepository interface {
 	Create(property *models.Property) error
-	GetPage(page, limit int, city string) ([]*models.Property, int, error)
+	GetPage(page, limit int, filters models.PropertyListFilters) ([]*models.Property, int, error)
 	GetByID(id int) (*models.Property, error)
 	GetCityFilters(city string) (*models.CityFilters, error)
 }
@@ -36,12 +36,53 @@ func (r *InMemoryPropertyRepo) Create(prop *models.Property) error {
 	return nil
 }
 
-func (r *InMemoryPropertyRepo) GetPage(page, limit int, city string) ([]*models.Property, int, error) {
+func matchesListFilters(p *models.Property, f models.PropertyListFilters) bool {
+	if f.City != "" && p.City != f.City {
+		return false
+	}
+	if f.District != "" && (p.District == nil || *p.District != f.District) {
+		return false
+	}
+	if f.BuildingType != "" && (p.BuildingType == nil || *p.BuildingType != f.BuildingType) {
+		return false
+	}
+	if f.Developer != "" && (p.Developer == nil || *p.Developer != f.Developer) {
+		return false
+	}
+	if f.RepairType != "" && (p.RepairType == nil || *p.RepairType != f.RepairType) {
+		return false
+	}
+	if f.BuildingRepairType != "" && (p.BuildingRepairType == nil || *p.BuildingRepairType != f.BuildingRepairType) {
+		return false
+	}
+	if f.Rooms != nil && p.Rooms != *f.Rooms {
+		return false
+	}
+	if f.Area != nil {
+		rounded := int(*f.Area + 0.5)
+		propRounded := int(p.Area + 0.5)
+		if propRounded != rounded {
+			return false
+		}
+	}
+	if f.Floor != nil && (p.Floor == nil || *p.Floor != *f.Floor) {
+		return false
+	}
+	if f.TotalFloors != nil && (p.TotalFloors == nil || *p.TotalFloors != *f.TotalFloors) {
+		return false
+	}
+	if f.YearBuilt != nil && (p.YearBuilt == nil || *p.YearBuilt != *f.YearBuilt) {
+		return false
+	}
+	return true
+}
+
+func (r *InMemoryPropertyRepo) GetPage(page, limit int, filters models.PropertyListFilters) ([]*models.Property, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	all := make([]*models.Property, 0, len(r.props))
 	for _, p := range r.props {
-		if city == "" || p.City == city {
+		if matchesListFilters(p, filters) {
 			all = append(all, p)
 		}
 	}

@@ -2,19 +2,97 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DATA_UPDATE_INFO, RUSSIAN_CITIES } from '../../constants/regions';
+import { optionalChoice, resetCityFilterFields } from '../../constants/propertyOptions';
+import { useCityFilters } from '../../hooks/useCityFilters';
+import FilterSelect from '../common/FilterSelect';
+import {
+    MAX_FLOOR,
+    MAX_TOTAL_FLOORS,
+    MIN_FLOOR,
+    MIN_TOTAL_FLOORS,
+    parseOptionalFloor,
+} from '../../utils/validateFloors';
+import {
+    MAX_YEAR_BUILT,
+    MIN_YEAR_BUILT,
+    parseOptionalYear,
+} from '../../utils/validateYear';
 import PropertyCard from './PropertyCard';
 
 const PAGE_SIZE = 20;
+const FAVORITE_FILTER_KEY = 'favoritePropertyFilters';
+
+const INITIAL_FILTERS = {
+    city: '',
+    area: '',
+    rooms: '',
+    district: '',
+    floor: '',
+    total_floors: '',
+    building_type: '',
+    year_built: '',
+    developer: '',
+    repair_type: '',
+    building_repair_type: '',
+};
+
+function buildListParams(form, page) {
+    const params = { page, limit: PAGE_SIZE };
+    if (form.city) {
+        params.city = form.city;
+    }
+    if (form.area !== '') {
+        params.area = parseFloat(form.area);
+    }
+    if (form.rooms !== '') {
+        params.rooms = parseInt(form.rooms, 10);
+    }
+    const district = optionalChoice(form.district);
+    if (district) {
+        params.district = district;
+    }
+    const floor = parseOptionalFloor(form.floor);
+    if (floor !== undefined) {
+        params.floor = floor;
+    }
+    const totalFloors = parseOptionalFloor(form.total_floors);
+    if (totalFloors !== undefined) {
+        params.total_floors = totalFloors;
+    }
+    const buildingType = optionalChoice(form.building_type);
+    if (buildingType) {
+        params.building_type = buildingType;
+    }
+    const yearBuilt = parseOptionalYear(form.year_built);
+    if (yearBuilt !== undefined) {
+        params.year_built = yearBuilt;
+    }
+    const developer = optionalChoice(form.developer);
+    if (developer) {
+        params.developer = developer;
+    }
+    const repairType = optionalChoice(form.repair_type);
+    if (repairType) {
+        params.repair_type = repairType;
+    }
+    const buildingRepairType = optionalChoice(form.building_repair_type);
+    if (buildingRepairType) {
+        params.building_repair_type = buildingRepairType;
+    }
+    return params;
+}
 
 const PropertyList = () => {
     const [properties, setProperties] = useState([]);
     const [favorites, setFavorites] = useState([]);
-    const [cityFilter, setCityFilter] = useState('');
+    const [form, setForm] = useState(INITIAL_FILTERS);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [watchSaved, setWatchSaved] = useState(false);
     const { isAuthenticated } = useAuth();
+    const { filters, loading: filtersLoading } = useCityFilters(form.city);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -23,17 +101,32 @@ const PropertyList = () => {
     }, [isAuthenticated]);
 
     useEffect(() => {
+        setWatchSaved(Boolean(localStorage.getItem(FAVORITE_FILTER_KEY)));
+    }, []);
+
+    useEffect(() => {
         loadProperties();
-    }, [page, cityFilter]);
+    }, [
+        page,
+        form.city,
+        form.area,
+        form.rooms,
+        form.district,
+        form.floor,
+        form.total_floors,
+        form.building_type,
+        form.year_built,
+        form.developer,
+        form.repair_type,
+        form.building_repair_type,
+    ]);
 
     const loadProperties = async () => {
         setLoading(true);
         try {
-            const params = { page, limit: PAGE_SIZE };
-            if (cityFilter) {
-                params.city = cityFilter;
-            }
-            const response = await API.get('/properties', { params });
+            const response = await API.get('/properties', {
+                params: buildListParams(form, page),
+            });
             const data = response.data;
             setProperties(data.items ?? []);
             setTotal(data.total ?? 0);
@@ -72,9 +165,35 @@ const PropertyList = () => {
         }
     };
 
-    const handleCityChange = (e) => {
-        setCityFilter(e.target.value);
+    const update = (field) => (e) => {
+        setForm((prev) => ({ ...prev, [field]: e.target.value }));
         setPage(1);
+    };
+
+    const handleCityChange = (e) => {
+        setForm(resetCityFilterFields(form, e.target.value));
+        setPage(1);
+    };
+
+    const resetFilters = () => {
+        setForm(INITIAL_FILTERS);
+        setPage(1);
+    };
+
+    const saveFavoriteCharacteristics = () => {
+        const params = buildListParams(form, 1);
+        delete params.page;
+        delete params.limit;
+        localStorage.setItem(
+            FAVORITE_FILTER_KEY,
+            JSON.stringify({
+                ...params,
+                saved_at: new Date().toISOString(),
+                last_checked_at: new Date().toISOString(),
+                seen_ids: [],
+            })
+        );
+        setWatchSaved(true);
     };
 
     const goToPage = (nextPage) => {
@@ -96,6 +215,19 @@ const PropertyList = () => {
     const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
     const to = Math.min(page * PAGE_SIZE, total);
 
+    const hasActiveFilters =
+        form.city !== '' ||
+        form.area !== '' ||
+        form.rooms !== '' ||
+        form.district !== '' ||
+        form.floor !== '' ||
+        form.total_floors !== '' ||
+        form.building_type !== '' ||
+        form.year_built !== '' ||
+        form.developer !== '' ||
+        form.repair_type !== '' ||
+        form.building_repair_type !== '';
+
     return (
         <div className="property-list page-container">
             <h2>Объекты недвижимости</h2>
@@ -103,17 +235,128 @@ const PropertyList = () => {
                 Новые объявления: парсер — каждые {DATA_UPDATE_INFO.parserHours} ч. (26 регионов),
                 вручную — после входа в систему.
             </p>
-            <div className="filters">
+            <div className="filters form-grid">
                 <label>
-                    Город:
-                    <select value={cityFilter} onChange={handleCityChange}>
+                    Город
+                    <select value={form.city} onChange={handleCityChange}>
                         <option value="">Все</option>
                         {RUSSIAN_CITIES.map((city) => (
-                            <option key={city} value={city}>{city}</option>
+                            <option key={city} value={city}>
+                                {city}
+                            </option>
                         ))}
                     </select>
                 </label>
+                <label>
+                    Площадь (м²)
+                    <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={form.area}
+                        onChange={update('area')}
+                        placeholder="любая"
+                    />
+                </label>
+                <label>
+                    Комнат
+                    <input
+                        type="number"
+                        min="1"
+                        value={form.rooms}
+                        onChange={update('rooms')}
+                        placeholder="любое"
+                    />
+                </label>
+                <FilterSelect
+                    label="Район"
+                    value={form.district}
+                    onChange={update('district')}
+                    options={filters.districts}
+                    loading={filtersLoading}
+                />
+                <label>
+                    Этаж
+                    <input
+                        type="number"
+                        min={MIN_FLOOR}
+                        max={MAX_FLOOR}
+                        value={form.floor}
+                        onChange={update('floor')}
+                        placeholder={`${MIN_FLOOR}–${MAX_FLOOR}`}
+                    />
+                </label>
+                <label>
+                    Этажей в доме
+                    <input
+                        type="number"
+                        min={MIN_TOTAL_FLOORS}
+                        max={MAX_TOTAL_FLOORS}
+                        value={form.total_floors}
+                        onChange={update('total_floors')}
+                        placeholder={`${MIN_TOTAL_FLOORS}–${MAX_TOTAL_FLOORS}`}
+                    />
+                </label>
+                <FilterSelect
+                    label="Тип дома"
+                    value={form.building_type}
+                    onChange={update('building_type')}
+                    options={filters.building_types}
+                    loading={filtersLoading}
+                />
+                <label>
+                    Год постройки
+                    <input
+                        type="number"
+                        min={MIN_YEAR_BUILT}
+                        max={MAX_YEAR_BUILT}
+                        value={form.year_built}
+                        onChange={update('year_built')}
+                        placeholder={`${MIN_YEAR_BUILT}–${MAX_YEAR_BUILT}`}
+                    />
+                </label>
+                <FilterSelect
+                    label="Застройщик"
+                    value={form.developer}
+                    onChange={update('developer')}
+                    options={filters.developers}
+                    loading={filtersLoading}
+                />
+                <FilterSelect
+                    label="Ремонт квартиры"
+                    value={form.repair_type}
+                    onChange={update('repair_type')}
+                    options={filters.repair_types}
+                    loading={filtersLoading}
+                />
+                <FilterSelect
+                    label="Ремонт дома"
+                    value={form.building_repair_type}
+                    onChange={update('building_repair_type')}
+                    options={filters.building_repair_types}
+                    loading={filtersLoading}
+                />
+                {isAuthenticated && hasActiveFilters && (
+                    <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={saveFavoriteCharacteristics}
+                    >
+                        Сохранить избранные характеристики
+                    </button>
+                )}
+                {hasActiveFilters && (
+                    <button type="button" className="btn-secondary" onClick={resetFilters}>
+                        Сбросить фильтры
+                    </button>
+                )}
             </div>
+            {isAuthenticated && watchSaved && (
+                <p className="data-update-hint">
+                    Избранные характеристики сохранены. Колокольчик в шапке сообщит о новых совпадениях
+                    после обновления базы парсером.
+                </p>
+            )}
 
             {loading ? (
                 <p className="loading-hint">Загрузка...</p>
@@ -130,7 +373,11 @@ const PropertyList = () => {
                         ))}
                     </div>
                     {properties.length === 0 && (
-                        <p>Нет объектов. Запустите парсер или добавьте вручную.</p>
+                        <p>
+                            {hasActiveFilters
+                                ? 'Нет объектов по выбранным фильтрам. Измените условия или сбросьте фильтры.'
+                                : 'Нет объектов. Запустите парсер или добавьте вручную.'}
+                        </p>
                     )}
                     {totalPages > 1 && (
                         <nav className="pagination" aria-label="Навигация по страницам">
@@ -148,7 +395,9 @@ const PropertyList = () => {
                                     const showEllipsis = prev !== undefined && num - prev > 1;
                                     return (
                                         <React.Fragment key={num}>
-                                            {showEllipsis && <span className="pagination-ellipsis">…</span>}
+                                            {showEllipsis && (
+                                                <span className="pagination-ellipsis">…</span>
+                                            )}
                                             <button
                                                 type="button"
                                                 className={`pagination-btn${num === page ? ' active' : ''}`}
