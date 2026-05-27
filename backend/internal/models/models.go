@@ -22,6 +22,8 @@ type Property struct {
 	BuildingType *string   `json:"building_type,omitempty"`
 	YearBuilt    *int      `json:"year_built,omitempty"`
 	Developer    *string   `json:"developer,omitempty"`
+	HousingType         *string `json:"housing_type,omitempty"`
+	ApartmentType       *string `json:"apartment_type,omitempty"`
 	RepairType          *string `json:"repair_type,omitempty"`
 	BuildingRepairType  *string `json:"building_repair_type,omitempty"`
 	Price               float64 `json:"price"`
@@ -59,6 +61,8 @@ type CreatePropertyRequest struct {
 	BuildingType *string `json:"building_type,omitempty"`
 	YearBuilt    *int    `json:"year_built,omitempty"`
 	Developer    *string `json:"developer,omitempty"`
+	HousingType        *string `json:"housing_type,omitempty"`
+	ApartmentType      *string `json:"apartment_type,omitempty"`
 	RepairType         *string `json:"repair_type,omitempty"`
 	BuildingRepairType *string `json:"building_repair_type,omitempty"`
 	Price              float64 `json:"price"`
@@ -76,6 +80,8 @@ type PredictRequest struct {
 	BuildingType *string `json:"building_type,omitempty"`
 	YearBuilt    *int    `json:"year_built,omitempty"`
 	Developer    *string `json:"developer,omitempty"`
+	HousingType        *string `json:"housing_type,omitempty"`
+	ApartmentType      *string `json:"apartment_type,omitempty"`
 	RepairType         *string `json:"repair_type,omitempty"`
 	BuildingRepairType *string `json:"building_repair_type,omitempty"`
 }

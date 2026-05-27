@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import API from '../../services/api';
 import { DATA_UPDATE_INFO, RUSSIAN_CITIES } from '../../constants/regions';
-import { optionalChoice, resetCityFilterFields } from '../../constants/propertyOptions';
+import {
+    APARTMENT_TYPES,
+    HOUSING_TYPE_DEFAULT,
+    applyHousingTypeRules,
+    isStudioRoomsLocked,
+    optionalChoice,
+    resetCityFilterFields,
+} from '../../constants/propertyOptions';
+import HousingTypeSelect from '../common/HousingTypeSelect';
 import { useCityFilters } from '../../hooks/useCityFilters';
 import FilterSelect from '../common/FilterSelect';
 import PredictDashboard from './PredictDashboard';
@@ -26,6 +34,8 @@ const PredictForm = () => {
         area: '50',
         rooms: '2',
         city: 'Москва',
+        housing_type: HOUSING_TYPE_DEFAULT,
+        apartment_type: '',
         district: '',
         floor: '',
         total_floors: '',
@@ -59,20 +69,28 @@ const PredictForm = () => {
         // Нужны минимум 3 поля, которые обязательны для запроса к ML.
         if (!city || !area || !rooms) return;
 
-        setForm({
-            ...DEFAULT_FORM,
-            city,
-            area,
-            rooms,
-            district: params.get('district') ?? '',
-            floor: params.get('floor') ?? '',
-            total_floors: params.get('total_floors') ?? '',
-            building_type: params.get('building_type') ?? '',
-            year_built: params.get('year_built') ?? '',
-            developer: params.get('developer') ?? '',
-            repair_type: params.get('repair_type') ?? '',
-            building_repair_type: params.get('building_repair_type') ?? '',
-        });
+        const housingType = params.get('housing_type') || HOUSING_TYPE_DEFAULT;
+        setForm(
+            applyHousingTypeRules(
+                {
+                    ...DEFAULT_FORM,
+                    city,
+                    area,
+                    rooms,
+                    housing_type: housingType,
+                    apartment_type: params.get('apartment_type') ?? '',
+                    district: params.get('district') ?? '',
+                    floor: params.get('floor') ?? '',
+                    total_floors: params.get('total_floors') ?? '',
+                    building_type: params.get('building_type') ?? '',
+                    year_built: params.get('year_built') ?? '',
+                    developer: params.get('developer') ?? '',
+                    repair_type: params.get('repair_type') ?? '',
+                    building_repair_type: params.get('building_repair_type') ?? '',
+                },
+                housingType
+            )
+        );
         setError('');
         setResult(null);
     }, [location.search]);
@@ -103,6 +121,10 @@ const PredictForm = () => {
         setForm(resetCityFilterFields(form, e.target.value));
     };
 
+    const handleHousingTypeChange = (housingType) => {
+        setForm(applyHousingTypeRules(form, housingType));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const floorError = validateFloors(form.floor, form.total_floors);
@@ -119,6 +141,8 @@ const PredictForm = () => {
                 area: parseFloat(form.area),
                 rooms: parseInt(form.rooms, 10),
                 city: form.city,
+                housing_type: form.housing_type || HOUSING_TYPE_DEFAULT,
+                apartment_type: optionalChoice(form.apartment_type),
                 district: optionalChoice(form.district),
                 floor: parseOptionalFloor(form.floor),
                 total_floors: parseOptionalFloor(form.total_floors),
@@ -176,16 +200,35 @@ const PredictForm = () => {
                         ))}
                     </select>
                 </label>
+                <HousingTypeSelect
+                    value={form.housing_type}
+                    onChange={handleHousingTypeChange}
+                    required
+                />
                 <label>
                     Площадь (м²) *
                     <input type="number" step="0.1" value={form.area} onChange={update('area')} required />
                 </label>
                 <label>
                     Комнат *
-                    <input type="number" min="1" value={form.rooms} onChange={update('rooms')} required />
+                    <input
+                        type="number"
+                        min="1"
+                        max={isStudioRoomsLocked(form.housing_type) ? 1 : undefined}
+                        value={form.rooms}
+                        onChange={update('rooms')}
+                        disabled={isStudioRoomsLocked(form.housing_type)}
+                        required
+                    />
                 </label>
                 <FilterSelect
-                    label="Район"
+                    label="Тип квартиры"
+                    value={form.apartment_type}
+                    onChange={update('apartment_type')}
+                    options={APARTMENT_TYPES}
+                />
+                <FilterSelect
+                    label="Округ"
                     value={form.district}
                     onChange={update('district')}
                     options={filters.districts}

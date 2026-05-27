@@ -1,6 +1,33 @@
 export const ANY_VALUE = '';
 export const ANY_LABEL = 'любой';
 
+export const HOUSING_TYPE_DEFAULT = 'квартира';
+export const HOUSING_TYPE_STUDIO = 'студия';
+
+export const HOUSING_TYPES = ['квартира', 'студия', 'апартаменты'];
+
+/** Подписи для select (значение в API — в нижнем регистре) */
+export const HOUSING_TYPE_LABELS = {
+    квартира: 'Квартира',
+    студия: 'Студия',
+    апартаменты: 'Апартаменты',
+};
+
+/** При выборе студии всегда 1 «комната» (планировка без отдельной спальни). */
+export function applyHousingTypeRules(form, housingType) {
+    const next = { ...form, housing_type: housingType };
+    if (housingType === HOUSING_TYPE_STUDIO) {
+        next.rooms = '1';
+    }
+    return next;
+}
+
+export function isStudioRoomsLocked(housingType) {
+    return housingType === HOUSING_TYPE_STUDIO;
+}
+
+export const APARTMENT_TYPES = ['первичка', 'вторичка'];
+
 export const COMMON_DEVELOPERS = [
     'ПИК',
     'Самолёт',
@@ -29,6 +56,8 @@ export const COMMON_REPAIR_TYPES = [
     'евроремонт',
     'косметический',
     'чистовая',
+    'предчистовая',
+    'черновая',
     'требует ремонта',
 ];
 
@@ -63,6 +92,7 @@ export const CITY_FILTER_FIELDS = [
     'district',
     'building_type',
     'developer',
+    'apartment_type',
     'repair_type',
     'building_repair_type',
 ];

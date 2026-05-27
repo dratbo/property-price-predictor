@@ -23,6 +23,8 @@ CATEGORICAL_FEATURES = [
     "metro",
     "building_type",
     "developer",
+    "housing_type",
+    "apartment_type",
     "repair_type",
     "building_repair_type",
 ]
@@ -37,6 +39,7 @@ def _prepare_dataframe(rows: list[dict]) -> pd.DataFrame:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     for col in CATEGORICAL_FEATURES:
         df[col] = df[col].fillna("unknown").astype(str)
+    df["housing_type"] = df["housing_type"].replace({"unknown": "квартира", "": "квартира"})
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
     df = df.dropna(subset=["area", "rooms", "city", "price"])
     df = df[df["price"] > 0]
@@ -146,7 +149,7 @@ def predict_price(features: dict) -> float:
     row = {col: features.get(col) for col in NUMERIC_FEATURES + CATEGORICAL_FEATURES}
     for col in CATEGORICAL_FEATURES:
         if row.get(col) in (None, ""):
-            row[col] = "unknown"
+            row[col] = "квартира" if col == "housing_type" else "unknown"
     for col in NUMERIC_FEATURES:
         val = row.get(col)
         if val is None or val == "":

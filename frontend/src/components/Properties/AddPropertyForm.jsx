@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import API from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { RUSSIAN_CITIES } from '../../constants/regions';
-import { optionalChoice, resetCityFilterFields } from '../../constants/propertyOptions';
+import {
+    APARTMENT_TYPES,
+    HOUSING_TYPE_DEFAULT,
+    applyHousingTypeRules,
+    isStudioRoomsLocked,
+    optionalChoice,
+    resetCityFilterFields,
+} from '../../constants/propertyOptions';
+import HousingTypeSelect from '../common/HousingTypeSelect';
 import { useCityFilters } from '../../hooks/useCityFilters';
 import FilterSelect from '../common/FilterSelect';
 import {
@@ -24,6 +32,8 @@ const AddPropertyForm = () => {
     const [form, setForm] = useState({
         address: '',
         city: 'Москва',
+        housing_type: HOUSING_TYPE_DEFAULT,
+        apartment_type: '',
         district: '',
         metro: '',
         area: '',
@@ -51,6 +61,10 @@ const AddPropertyForm = () => {
         setForm(resetCityFilterFields(form, e.target.value));
     };
 
+    const handleHousingTypeChange = (housingType) => {
+        setForm(applyHousingTypeRules(form, housingType));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const floorError = validateFloors(form.floor, form.total_floors);
@@ -63,6 +77,8 @@ const AddPropertyForm = () => {
             await API.post('/properties', {
                 address: form.address,
                 city: form.city,
+                housing_type: form.housing_type || HOUSING_TYPE_DEFAULT,
+                apartment_type: optionalChoice(form.apartment_type),
                 district: optionalChoice(form.district),
                 metro: optional(form.metro),
                 area: parseFloat(form.area),
@@ -97,8 +113,19 @@ const AddPropertyForm = () => {
                         ))}
                     </select>
                 </label>
+                <HousingTypeSelect
+                    value={form.housing_type}
+                    onChange={handleHousingTypeChange}
+                    required
+                />
                 <FilterSelect
-                    label="Район"
+                    label="Тип квартиры"
+                    value={form.apartment_type}
+                    onChange={update('apartment_type')}
+                    options={APARTMENT_TYPES}
+                />
+                <FilterSelect
+                    label="Округ"
                     value={form.district}
                     onChange={update('district')}
                     options={filters.districts}
@@ -106,7 +133,18 @@ const AddPropertyForm = () => {
                 />
                 <label>Метро<input value={form.metro} onChange={update('metro')} /></label>
                 <label>Площадь (м²) *<input type="number" step="0.1" value={form.area} onChange={update('area')} required /></label>
-                <label>Комнат *<input type="number" value={form.rooms} onChange={update('rooms')} required /></label>
+                <label>
+                    Комнат *
+                    <input
+                        type="number"
+                        min="1"
+                        max={isStudioRoomsLocked(form.housing_type) ? 1 : undefined}
+                        value={form.rooms}
+                        onChange={update('rooms')}
+                        disabled={isStudioRoomsLocked(form.housing_type)}
+                        required
+                    />
+                </label>
                 <label>
                     Этаж
                     <input

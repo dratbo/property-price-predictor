@@ -55,6 +55,12 @@ func matchesListFilters(p *models.Property, f models.PropertyListFilters) bool {
 	if f.BuildingRepairType != "" && (p.BuildingRepairType == nil || *p.BuildingRepairType != f.BuildingRepairType) {
 		return false
 	}
+	if f.HousingType != "" && (p.HousingType == nil || *p.HousingType != f.HousingType) {
+		return false
+	}
+	if f.ApartmentType != "" && (p.ApartmentType == nil || *p.ApartmentType != f.ApartmentType) {
+		return false
+	}
 	if f.Rooms != nil && p.Rooms != *f.Rooms {
 		return false
 	}

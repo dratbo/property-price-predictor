@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DATA_UPDATE_INFO, RUSSIAN_CITIES } from '../../constants/regions';
-import { optionalChoice, resetCityFilterFields } from '../../constants/propertyOptions';
+import {
+    APARTMENT_TYPES,
+    applyHousingTypeRules,
+    isStudioRoomsLocked,
+    optionalChoice,
+    resetCityFilterFields,
+} from '../../constants/propertyOptions';
+import HousingTypeSelect from '../common/HousingTypeSelect';
 import { useCityFilters } from '../../hooks/useCityFilters';
 import FilterSelect from '../common/FilterSelect';
 import {
@@ -26,6 +33,8 @@ const INITIAL_FILTERS = {
     city: '',
     area: '',
     rooms: '',
+    housing_type: '',
+    apartment_type: '',
     district: '',
     floor: '',
     total_floors: '',
@@ -46,6 +55,14 @@ function buildListParams(form, page) {
     }
     if (form.rooms !== '') {
         params.rooms = parseInt(form.rooms, 10);
+    }
+    const housingType = optionalChoice(form.housing_type);
+    if (housingType) {
+        params.housing_type = housingType;
+    }
+    const apartmentType = optionalChoice(form.apartment_type);
+    if (apartmentType) {
+        params.apartment_type = apartmentType;
     }
     const district = optionalChoice(form.district);
     if (district) {
@@ -111,6 +128,8 @@ const PropertyList = () => {
         form.city,
         form.area,
         form.rooms,
+        form.housing_type,
+        form.apartment_type,
         form.district,
         form.floor,
         form.total_floors,
@@ -175,6 +194,11 @@ const PropertyList = () => {
         setPage(1);
     };
 
+    const handleHousingTypeChange = (housingType) => {
+        setForm(applyHousingTypeRules({ ...form, housing_type: housingType }, housingType));
+        setPage(1);
+    };
+
     const resetFilters = () => {
         setForm(INITIAL_FILTERS);
         setPage(1);
@@ -219,6 +243,7 @@ const PropertyList = () => {
         form.city !== '' ||
         form.area !== '' ||
         form.rooms !== '' ||
+        form.apartment_type !== '' ||
         form.district !== '' ||
         form.floor !== '' ||
         form.total_floors !== '' ||
@@ -263,13 +288,26 @@ const PropertyList = () => {
                     <input
                         type="number"
                         min="1"
+                        max={isStudioRoomsLocked(form.housing_type) ? 1 : undefined}
                         value={form.rooms}
                         onChange={update('rooms')}
-                        placeholder="любое"
+                        disabled={isStudioRoomsLocked(form.housing_type)}
+                        placeholder={isStudioRoomsLocked(form.housing_type) ? '1' : 'любое'}
                     />
                 </label>
+                <HousingTypeSelect
+                    value={form.housing_type}
+                    onChange={handleHousingTypeChange}
+                    allowAny
+                />
                 <FilterSelect
-                    label="Район"
+                    label="Тип квартиры"
+                    value={form.apartment_type}
+                    onChange={update('apartment_type')}
+                    options={APARTMENT_TYPES}
+                />
+                <FilterSelect
+                    label="Округ"
                     value={form.district}
                     onChange={update('district')}
                     options={filters.districts}

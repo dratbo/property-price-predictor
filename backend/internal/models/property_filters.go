@@ -8,6 +8,8 @@ type PropertyListFilters struct {
 	Developer          string
 	RepairType         string
 	BuildingRepairType string
+	HousingType        string
+	ApartmentType      string
 	Rooms              *int
 	Area               *float64
 	Floor              *int

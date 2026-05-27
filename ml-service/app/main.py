@@ -53,6 +53,8 @@ class PredictRequest(BaseModel):
     building_type: Optional[str] = None
     year_built: Optional[int] = Field(None, ge=1901, le=2026)
     developer: Optional[str] = None
+    housing_type: Optional[str] = "квартира"
+    apartment_type: Optional[str] = None
     repair_type: Optional[str] = None
     building_repair_type: Optional[str] = None
 

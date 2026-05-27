@@ -65,7 +65,18 @@ const PropertyDetail = () => {
 
             <div className="detail-grid">
                 <Field label="Город" value={property.city} />
-                <Field label="Район" value={property.district} />
+                <Field
+                    label="Тип жилья"
+                    value={
+                        {
+                            квартира: 'Квартира',
+                            студия: 'Студия',
+                            апартаменты: 'Апартаменты',
+                        }[property.housing_type] || property.housing_type || 'Квартира'
+                    }
+                />
+                <Field label="Тип квартиры" value={property.apartment_type} />
+                <Field label="Округ" value={property.district} />
                 <Field label="Метро" value={property.metro} />
                 <Field label="Площадь" value={`${property.area} м²`} />
                 <Field label="Комнат" value={property.rooms} />

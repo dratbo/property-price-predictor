@@ -19,7 +19,7 @@ func NewPgPropertyRepo(pool *pgxpool.Pool) *PgPropertyRepo {
 }
 
 const propertyColumns = `id, address, city, district, metro, area, rooms, floor, total_floors,
-	building_type, year_built, developer, repair_type, building_repair_type, price, source_url, created_at, updated_at`
+	building_type, year_built, developer, housing_type, apartment_type, repair_type, building_repair_type, price, source_url, created_at, updated_at`
 
 func scanProperty(row interface {
 	Scan(dest ...any) error
@@ -28,7 +28,7 @@ func scanProperty(row interface {
 	err := row.Scan(
 		&p.ID, &p.Address, &p.City, &p.District, &p.Metro, &p.Area, &p.Rooms,
 		&p.Floor, &p.TotalFloors, &p.BuildingType, &p.YearBuilt, &p.Developer,
-		&p.RepairType, &p.BuildingRepairType, &p.Price, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt,
+		&p.HousingType, &p.ApartmentType, &p.RepairType, &p.BuildingRepairType, &p.Price, &p.SourceURL, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -41,12 +41,14 @@ func (r *PgPropertyRepo) Create(property *models.Property) error {
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO properties (
 			address, city, district, metro, area, rooms, floor, total_floors,
-			building_type, year_built, developer, repair_type, building_repair_type, price, source_url
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+			building_type, year_built, developer, housing_type, apartment_type,
+			repair_type, building_repair_type, price, source_url
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 		RETURNING id, created_at, updated_at`,
 		property.Address, property.City, property.District, property.Metro,
 		property.Area, property.Rooms, property.Floor, property.TotalFloors,
 		property.BuildingType, property.YearBuilt, property.Developer,
+		property.HousingType, property.ApartmentType,
 		property.RepairType, property.BuildingRepairType, property.Price, property.SourceURL,
 	).Scan(&property.ID, &property.CreatedAt, &property.UpdatedAt)
 	return err
@@ -80,6 +82,8 @@ func buildListWhere(filters models.PropertyListFilters) (string, []any) {
 	addEq("developer", filters.Developer)
 	addEq("repair_type", filters.RepairType)
 	addEq("building_repair_type", filters.BuildingRepairType)
+	addEq("housing_type", filters.HousingType)
+	addEq("apartment_type", filters.ApartmentType)
 	addEqInt("rooms", filters.Rooms)
 	addEqInt("floor", filters.Floor)
 	addEqInt("total_floors", filters.TotalFloors)

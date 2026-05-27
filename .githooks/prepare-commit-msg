@@ -1,0 +1,8 @@
+#!/bin/sh
+# Удаляет автоматическую подпись Cursor из сообщения коммита.
+# Включить: git config core.hooksPath .githooks
+if [ -f "$1" ]; then
+  sed -i.bak '/Co-authored-by: Cursor/d' "$1" 2>/dev/null || sed -i '' '/Co-authored-by: Cursor/d' "$1"
+  sed -i.bak '/cursoragent@cursor\.com/d' "$1" 2>/dev/null || sed -i '' '/cursoragent@cursor\.com/d' "$1"
+  rm -f "$1.bak"
+fi

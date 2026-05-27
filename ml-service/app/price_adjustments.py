@@ -21,7 +21,20 @@ REPAIR_TYPE_MULTIPLIERS: dict[str, float] = {
     "евроремонт": 1.06,
     "косметический": 1.02,
     "чистовая": 1.00,
+    "предчистовая": 0.96,
+    "черновая": 0.88,
     "требует ремонта": 0.90,
+}
+
+APARTMENT_TYPE_MULTIPLIERS: dict[str, float] = {
+    "первичка": 1.05,
+    "вторичка": 1.00,
+}
+
+HOUSING_TYPE_MULTIPLIERS: dict[str, float] = {
+    "квартира": 1.00,
+    "студия": 1.04,
+    "апартаменты": 0.97,
 }
 
 # Ремонт дома
@@ -79,6 +92,8 @@ def apply_price_adjustments(base_price: float, features: dict) -> float:
     """Возвращает скорректированную цену."""
     m = 1.0
     m *= _lookup(DISTRICT_MULTIPLIERS, features.get("district"))
+    m *= _lookup(APARTMENT_TYPE_MULTIPLIERS, features.get("apartment_type"))
+    m *= _lookup(HOUSING_TYPE_MULTIPLIERS, features.get("housing_type"))
     m *= _lookup(REPAIR_TYPE_MULTIPLIERS, features.get("repair_type"))
     m *= _lookup(BUILDING_REPAIR_MULTIPLIERS, features.get("building_repair_type"))
     m *= _lookup(DEVELOPER_MULTIPLIERS, features.get("developer"))

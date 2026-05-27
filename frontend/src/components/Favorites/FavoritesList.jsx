@@ -36,6 +36,8 @@ const FavoritesList = () => {
         if (property?.area != null) params.set('area', String(property.area));
         if (property?.rooms != null) params.set('rooms', String(property.rooms));
 
+        if (property?.housing_type) params.set('housing_type', property.housing_type);
+        if (property?.apartment_type) params.set('apartment_type', property.apartment_type);
         if (property?.district) params.set('district', property.district);
         if (property?.floor != null) params.set('floor', String(property.floor));
         if (property?.total_floors != null) params.set('total_floors', String(property.total_floors));

@@ -130,7 +130,14 @@ REPAIR_PRICE_FACTOR = {
     "евроремонт": 1.06,
     "косметический": 1.02,
     "чистовая": 1.00,
+    "предчистовая": 0.96,
+    "черновая": 0.88,
     "требует ремонта": 0.90,
+}
+
+APARTMENT_TYPE_PRICE_FACTOR = {
+    "первичка": 1.05,
+    "вторичка": 1.00,
 }
 
 BUILDING_REPAIR_PRICE_FACTOR = {
@@ -151,7 +158,25 @@ DEVELOPER_PRICE_FACTOR = {
 }
 
 BUILDING_TYPES = ["кирпичный", "панельный", "монолитный", "кирпично-монолитный"]
-REPAIR_TYPES = ["евроремонт", "косметический", "чистовая", "требует ремонта", "дизайнерский"]
+REPAIR_TYPES = [
+    "евроремонт",
+    "косметический",
+    "чистовая",
+    "предчистовая",
+    "черновая",
+    "требует ремонта",
+    "дизайнерский",
+]
+APARTMENT_TYPES = ["первичка", "вторичка"]
+HOUSING_TYPES = ["квартира", "студия", "апартаменты"]
+HOUSING_WEIGHTS = [0.72, 0.16, 0.12]
+STUDIO_AREA_RANGE = (20, 38)
+APARTMENTS_AREA_RANGE = (28, 58)
+HOUSING_SQM_FACTOR = {
+    "квартира": 1.0,
+    "студия": 1.06,
+    "апартаменты": 0.94,
+}
 BUILDING_REPAIR_TYPES = ["капитальный", "косметический", "без ремонта", "свежий", None, None]
 DEVELOPERS = ["ПИК", "Самолёт", "ЛСР", "Ак Барс", "Донстрой", None, None, None]
 METROS = {
@@ -165,23 +190,34 @@ TARGET = int(os.getenv("SEED_TARGET_PER_CITY", "100"))
 
 
 def random_property(city: str, index: int) -> dict:
-    rooms = random.randint(1, 4)
-    area_min, area_max = ROOM_AREA_RANGE.get(rooms, (28, 95))
-    area = round(random.uniform(area_min, area_max), 1)
+    housing_type = random.choices(HOUSING_TYPES, weights=HOUSING_WEIGHTS, k=1)[0]
+
+    if housing_type == "студия":
+        rooms = 1
+        area = round(random.uniform(*STUDIO_AREA_RANGE), 1)
+    elif housing_type == "апартаменты":
+        rooms = random.randint(1, 2)
+        area = round(random.uniform(*APARTMENTS_AREA_RANGE), 1)
+    else:
+        rooms = random.randint(1, 4)
+        area_min, area_max = ROOM_AREA_RANGE.get(rooms, (28, 95))
+        area = round(random.uniform(area_min, area_max), 1)
     total_floors = random.randint(max(5, rooms + 2), 25)
     floor = random.randint(1, total_floors)
     city_room_prices = CITY_ROOM_BASE_SQM.get(city, {})
     base_sqm = city_room_prices.get(rooms, PRICE_PER_SQM.get(city, 75_000))
-    sqm = base_sqm * random.uniform(0.82, 1.18)
+    sqm = base_sqm * random.uniform(0.82, 1.18) * HOUSING_SQM_FACTOR.get(housing_type, 1.0)
     district = random.choice(DISTRICT_ZONES)
     repair_type = random.choice(REPAIR_TYPES)
     building_repair = random.choice([b for b in BUILDING_REPAIR_TYPES if b])
     developer = random.choice([d for d in DEVELOPERS if d])
     year_built = random.randint(1965, 2023)
+    apartment_type = "первичка" if year_built >= 2018 else "вторичка"
 
     price = area * sqm
     price *= ZONE_PRICE_FACTOR.get(district, 1.0)
     price *= REPAIR_PRICE_FACTOR.get(repair_type, 1.0)
+    price *= APARTMENT_TYPE_PRICE_FACTOR.get(apartment_type, 1.0)
     price *= BUILDING_REPAIR_PRICE_FACTOR.get(building_repair, 1.0)
     if developer:
         price *= DEVELOPER_PRICE_FACTOR.get(developer, 1.0)
@@ -202,6 +238,8 @@ def random_property(city: str, index: int) -> dict:
         "building_type": random.choice(BUILDING_TYPES),
         "year_built": year_built,
         "developer": developer,
+        "housing_type": housing_type,
+        "apartment_type": apartment_type,
         "repair_type": repair_type,
         "building_repair_type": building_repair,
         "price": price,
@@ -220,11 +258,13 @@ def main():
     insert_sql = """
         INSERT INTO properties (
             address, city, district, metro, area, rooms, floor, total_floors,
-            building_type, year_built, developer, repair_type, building_repair_type, price, source_url
+            building_type, year_built, developer, housing_type, apartment_type,
+            repair_type, building_repair_type, price, source_url
         ) VALUES (
             %(address)s, %(city)s, %(district)s, %(metro)s, %(area)s, %(rooms)s,
             %(floor)s, %(total_floors)s, %(building_type)s, %(year_built)s,
-            %(developer)s, %(repair_type)s, %(building_repair_type)s, %(price)s, %(source_url)s
+            %(developer)s, %(housing_type)s, %(apartment_type)s,
+            %(repair_type)s, %(building_repair_type)s, %(price)s, %(source_url)s
         )
         ON CONFLICT (source_url) WHERE source_url IS NOT NULL DO NOTHING
     """

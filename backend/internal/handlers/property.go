@@ -44,21 +44,23 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prop := &models.Property{
-		Address:      req.Address,
-		City:         req.City,
-		District:     req.District,
-		Metro:        req.Metro,
-		Area:         req.Area,
-		Rooms:        req.Rooms,
-		Floor:        req.Floor,
-		TotalFloors:  req.TotalFloors,
-		BuildingType: req.BuildingType,
-		YearBuilt:    req.YearBuilt,
-		Developer:    req.Developer,
+		Address:            req.Address,
+		City:               req.City,
+		District:           req.District,
+		Metro:              req.Metro,
+		Area:               req.Area,
+		Rooms:              req.Rooms,
+		Floor:              req.Floor,
+		TotalFloors:        req.TotalFloors,
+		BuildingType:       req.BuildingType,
+		YearBuilt:          req.YearBuilt,
+		Developer:          req.Developer,
+		HousingType:        defaultHousingType(req.HousingType),
+		ApartmentType:      req.ApartmentType,
 		RepairType:         req.RepairType,
 		BuildingRepairType: req.BuildingRepairType,
 		Price:              req.Price,
-		SourceURL:    req.SourceURL,
+		SourceURL:          req.SourceURL,
 	}
 	if err := h.propertyRepo.Create(prop); err != nil {
 		http.Error(w, "failed to create property", http.StatusInternalServerError)
@@ -69,6 +71,14 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(prop)
+}
+
+func defaultHousingType(value *string) *string {
+	defaultVal := "квартира"
+	if value == nil || *value == "" {
+		return &defaultVal
+	}
+	return value
 }
 
 func parseOptionalIntQuery(q url.Values, key string) *int {
@@ -104,6 +114,8 @@ func parsePropertyListFilters(r *http.Request) models.PropertyListFilters {
 		Developer:          q.Get("developer"),
 		RepairType:         q.Get("repair_type"),
 		BuildingRepairType: q.Get("building_repair_type"),
+		HousingType:        q.Get("housing_type"),
+		ApartmentType:      q.Get("apartment_type"),
 		Rooms:              parseOptionalIntQuery(q, "rooms"),
 		Area:               parseOptionalFloatQuery(q, "area"),
 		Floor:              parseOptionalIntQuery(q, "floor"),

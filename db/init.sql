@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS properties (
     building_type TEXT,
     year_built INTEGER,
     developer TEXT,
+    housing_type TEXT DEFAULT 'квартира',
+    apartment_type TEXT,
     repair_type TEXT,
     building_repair_type TEXT,
     price NUMERIC(12,2) NOT NULL,
