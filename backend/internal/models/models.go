@@ -22,8 +22,9 @@ type Property struct {
 	BuildingType *string   `json:"building_type,omitempty"`
 	YearBuilt    *int      `json:"year_built,omitempty"`
 	Developer    *string   `json:"developer,omitempty"`
-	RepairType   *string   `json:"repair_type,omitempty"`
-	Price        float64   `json:"price"`
+	RepairType          *string `json:"repair_type,omitempty"`
+	BuildingRepairType  *string `json:"building_repair_type,omitempty"`
+	Price               float64 `json:"price"`
 	SourceURL    *string   `json:"source_url,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -58,9 +59,10 @@ type CreatePropertyRequest struct {
 	BuildingType *string `json:"building_type,omitempty"`
 	YearBuilt    *int    `json:"year_built,omitempty"`
 	Developer    *string `json:"developer,omitempty"`
-	RepairType   *string `json:"repair_type,omitempty"`
-	Price        float64 `json:"price"`
-	SourceURL    *string `json:"source_url,omitempty"`
+	RepairType         *string `json:"repair_type,omitempty"`
+	BuildingRepairType *string `json:"building_repair_type,omitempty"`
+	Price              float64 `json:"price"`
+	SourceURL          *string `json:"source_url,omitempty"`
 }
 
 type PredictRequest struct {
@@ -74,7 +76,8 @@ type PredictRequest struct {
 	BuildingType *string `json:"building_type,omitempty"`
 	YearBuilt    *int    `json:"year_built,omitempty"`
 	Developer    *string `json:"developer,omitempty"`
-	RepairType   *string `json:"repair_type,omitempty"`
+	RepairType         *string `json:"repair_type,omitempty"`
+	BuildingRepairType *string `json:"building_repair_type,omitempty"`
 }
 
 type PredictResponse struct {

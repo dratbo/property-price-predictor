@@ -5,9 +5,9 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-from . import analytics, model_trainer
+from . import analytics, model_trainer, price_adjustments
 from .database import fetch_properties
 
 logging.basicConfig(level=logging.INFO)
@@ -36,18 +36,31 @@ app.add_middleware(
 )
 
 
+MIN_FLOOR = 1
+MAX_FLOOR = 100
+MIN_TOTAL_FLOORS = 1
+MAX_TOTAL_FLOORS = 75
+
+
 class PredictRequest(BaseModel):
     area: float = Field(gt=0)
     rooms: int = Field(gt=0)
     city: str
     district: Optional[str] = None
     metro: Optional[str] = None
-    floor: Optional[int] = None
-    total_floors: Optional[int] = None
+    floor: Optional[int] = Field(None, ge=MIN_FLOOR, le=MAX_FLOOR)
+    total_floors: Optional[int] = Field(None, ge=MIN_TOTAL_FLOORS, le=MAX_TOTAL_FLOORS)
     building_type: Optional[str] = None
-    year_built: Optional[int] = None
+    year_built: Optional[int] = Field(None, ge=1901, le=2026)
     developer: Optional[str] = None
     repair_type: Optional[str] = None
+    building_repair_type: Optional[str] = None
+
+    @model_validator(mode="after")
+    def check_floor_vs_total(self):
+        if self.floor is not None and self.total_floors is not None and self.floor > self.total_floors:
+            raise ValueError("floor cannot be greater than total_floors")
+        return self
 
 
 class CityStat(BaseModel):
@@ -90,12 +103,14 @@ def cities_analytics():
 
 def _build_predict_response(req: PredictRequest) -> dict[str, Any]:
     features = req.model_dump()
-    predicted = model_trainer.predict_price(features)
+    base_predicted = model_trainer.predict_price(features)
+    predicted = price_adjustments.apply_price_adjustments(base_predicted, features)
     area = req.area
     price_per_sqm = predicted / area if area > 0 else 0
 
     rows = fetch_properties()
     city_stats = analytics.city_stats_from_rows(rows)
+    profile_stats = analytics.city_stats_for_profile(rows, req.area, req.rooms)
     city_data = city_stats.get(analytics.normalize_city(req.city), {})
     city_avg = city_data.get("avg_price")
     city_avg_sqm = city_data.get("avg_price_per_sqm")
@@ -111,6 +126,24 @@ def _build_predict_response(req: PredictRequest) -> dict[str, Any]:
         "city_avg_price": round(city_avg, 0) if city_avg else None,
         "city_avg_price_per_sqm": round(city_avg_sqm, 0) if city_avg_sqm else None,
         "city_listings_count": int(city_data.get("count", 0)),
+        "profile_stats": [
+            {
+                "city": city,
+                "count": int(data["count"]),
+                "avg_price": round(data["avg_price"], 0),
+                "avg_price_per_sqm": round(data["avg_price_per_sqm"], 0),
+                "annual_growth_rate_percent": round(
+                    analytics.annual_growth_rate(city) * 100, 1
+                ),
+            }
+            for city, data in sorted(
+                profile_stats.items(), key=lambda x: x[1]["avg_price"], reverse=True
+            )
+        ],
+        "profile_filter": {
+            "area": req.area,
+            "rooms": req.rooms,
+        },
         "forecast_12m": forecast,
         **trend_info,
     }

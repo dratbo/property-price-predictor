@@ -10,6 +10,7 @@ type PropertyRepository interface {
 	Create(property *models.Property) error
 	GetPage(page, limit int, city string) ([]*models.Property, int, error)
 	GetByID(id int) (*models.Property, error)
+	GetCityFilters(city string) (*models.CityFilters, error)
 }
 
 type InMemoryPropertyRepo struct {
@@ -60,6 +61,44 @@ func (r *InMemoryPropertyRepo) GetPage(page, limit int, city string) ([]*models.
 		end = total
 	}
 	return all[offset:end], total, nil
+}
+
+func (r *InMemoryPropertyRepo) GetCityFilters(city string) (*models.CityFilters, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	filters := &models.CityFilters{
+		Developers:          []string{},
+		Districts:           []string{},
+		BuildingTypes:       []string{},
+		RepairTypes:         []string{},
+		BuildingRepairTypes: []string{},
+	}
+	add := func(target *[]string, seen map[string]struct{}, value *string) {
+		if value == nil || *value == "" {
+			return
+		}
+		if _, ok := seen[*value]; ok {
+			return
+		}
+		seen[*value] = struct{}{}
+		*target = append(*target, *value)
+	}
+	devSeen := make(map[string]struct{})
+	distSeen := make(map[string]struct{})
+	btSeen := make(map[string]struct{})
+	rtSeen := make(map[string]struct{})
+	brtSeen := make(map[string]struct{})
+	for _, p := range r.props {
+		if p.City != city {
+			continue
+		}
+		add(&filters.Developers, devSeen, p.Developer)
+		add(&filters.Districts, distSeen, p.District)
+		add(&filters.BuildingTypes, btSeen, p.BuildingType)
+		add(&filters.RepairTypes, rtSeen, p.RepairType)
+		add(&filters.BuildingRepairTypes, brtSeen, p.BuildingRepairType)
+	}
+	return filters, nil
 }
 
 func (r *InMemoryPropertyRepo) GetByID(id int) (*models.Property, error) {

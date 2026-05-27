@@ -24,7 +24,7 @@ def get_connection():
 def fetch_properties():
     query = """
         SELECT area, rooms, city, district, metro, floor, total_floors,
-               building_type, year_built, developer, repair_type, price
+               building_type, year_built, developer, repair_type, building_repair_type, price
         FROM properties
         WHERE price > 0 AND area > 0 AND rooms > 0
     """

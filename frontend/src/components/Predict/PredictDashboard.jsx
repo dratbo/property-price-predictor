@@ -136,6 +136,28 @@ const PredictDashboard = ({ result, cityStats }) => {
                     </div>
                 )}
 
+                {result.profile_stats && result.profile_stats.length > 0 && (
+                    <div className="chart-card" style={{ gridColumn: '1 / -1' }}>
+                        <h3>
+                            Средние цены по регионам для профиля: {result.profile_filter?.area} м²,{' '}
+                            {result.profile_filter?.rooms} комн.
+                        </h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                                data={result.profile_stats}
+                                layout="vertical"
+                                margin={{ left: 80 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" tickFormatter={(v) => `${(v / 1e6).toFixed(1)}M`} />
+                                <YAxis type="category" dataKey="city" width={100} tick={{ fontSize: 12 }} />
+                                <Tooltip formatter={(v) => formatPrice(v)} />
+                                <Bar dataKey="avg_price" name="Средняя цена (профиль)" fill="#0f766e" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+
                 {cityStats && cityStats.length > 0 && (
                     <div className="chart-card" style={{ gridColumn: '1 / -1' }}>
                         <h3>Ожидаемый годовой рост по регионам (%)</h3>
@@ -147,6 +169,43 @@ const PredictDashboard = ({ result, cityStats }) => {
                                 <Tooltip />
                                 <Bar dataKey="annual_growth_rate_percent" name="Рост %">
                                     {cityStats.map((entry, i) => (
+                                        <Cell
+                                            key={i}
+                                            fill={
+                                                entry.annual_growth_rate_percent >= 5.5
+                                                    ? TREND_COLORS.growth
+                                                    : entry.annual_growth_rate_percent >= 3.5
+                                                      ? TREND_COLORS.stable
+                                                      : TREND_COLORS.decline
+                                            }
+                                        />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+
+                {result.profile_stats && result.profile_stats.length > 0 && (
+                    <div className="chart-card" style={{ gridColumn: '1 / -1' }}>
+                        <h3>
+                            Ожидаемый годовой рост по регионам (%) для профиля:{' '}
+                            {result.profile_filter?.area} м², {result.profile_filter?.rooms} комн.
+                        </h3>
+                        <ResponsiveContainer width="100%" height={280}>
+                            <BarChart data={result.profile_stats}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis
+                                    dataKey="city"
+                                    tick={{ fontSize: 11 }}
+                                    angle={-20}
+                                    textAnchor="end"
+                                    height={60}
+                                />
+                                <YAxis unit="%" />
+                                <Tooltip />
+                                <Bar dataKey="annual_growth_rate_percent" name="Рост % (профиль)">
+                                    {result.profile_stats.map((entry, i) => (
                                         <Cell
                                             key={i}
                                             fill={

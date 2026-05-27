@@ -74,7 +74,8 @@ const PropertyDetail = () => {
                 <Field label="Тип дома" value={property.building_type} />
                 <Field label="Год постройки" value={property.year_built} />
                 <Field label="Застройщик" value={property.developer} />
-                <Field label="Ремонт" value={property.repair_type} />
+                <Field label="Ремонт квартиры" value={property.repair_type} />
+                <Field label="Ремонт дома" value={property.building_repair_type} />
             </div>
 
             {property.source_url && (

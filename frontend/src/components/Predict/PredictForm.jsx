@@ -1,7 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import API from '../../services/api';
 import { DATA_UPDATE_INFO, RUSSIAN_CITIES } from '../../constants/regions';
+import { optionalChoice, resetCityFilterFields } from '../../constants/propertyOptions';
+import { useCityFilters } from '../../hooks/useCityFilters';
+import FilterSelect from '../common/FilterSelect';
 import PredictDashboard from './PredictDashboard';
+import {
+    MAX_FLOOR,
+    MAX_TOTAL_FLOORS,
+    MIN_FLOOR,
+    MIN_TOTAL_FLOORS,
+    parseOptionalFloor,
+    validateFloors,
+} from '../../utils/validateFloors';
+import {
+    MAX_YEAR_BUILT,
+    MIN_YEAR_BUILT,
+    parseOptionalYear,
+    validateYearBuilt,
+} from '../../utils/validateYear';
 
 const PredictForm = () => {
     const [form, setForm] = useState({
@@ -15,12 +32,14 @@ const PredictForm = () => {
         year_built: '',
         developer: '',
         repair_type: '',
+        building_repair_type: '',
     });
     const [result, setResult] = useState(null);
     const [cityStats, setCityStats] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [mlStatus, setMlStatus] = useState(null);
+    const { filters, loading: filtersLoading } = useCityFilters(form.city);
 
     useEffect(() => {
         loadAnalytics();
@@ -47,11 +66,20 @@ const PredictForm = () => {
 
     const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-    const optional = (value) => (value === '' ? undefined : value);
     const optionalInt = (value) => (value === '' ? undefined : parseInt(value, 10));
+
+    const handleCityChange = (e) => {
+        setForm(resetCityFilterFields(form, e.target.value));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const floorError = validateFloors(form.floor, form.total_floors);
+        const yearError = validateYearBuilt(form.year_built);
+        if (floorError || yearError) {
+            setError(floorError || yearError);
+            return;
+        }
         setLoading(true);
         setError('');
         setResult(null);
@@ -60,13 +88,14 @@ const PredictForm = () => {
                 area: parseFloat(form.area),
                 rooms: parseInt(form.rooms, 10),
                 city: form.city,
-                district: optional(form.district),
-                floor: optionalInt(form.floor),
-                total_floors: optionalInt(form.total_floors),
-                building_type: optional(form.building_type),
-                year_built: optionalInt(form.year_built),
-                developer: optional(form.developer),
-                repair_type: optional(form.repair_type),
+                district: optionalChoice(form.district),
+                floor: parseOptionalFloor(form.floor),
+                total_floors: parseOptionalFloor(form.total_floors),
+                building_type: optionalChoice(form.building_type),
+                year_built: parseOptionalYear(form.year_built),
+                developer: optionalChoice(form.developer),
+                repair_type: optionalChoice(form.repair_type),
+                building_repair_type: optionalChoice(form.building_repair_type),
             });
             setResult(response.data);
             setMlStatus('ok');
@@ -110,7 +139,7 @@ const PredictForm = () => {
             <form className="form-grid" onSubmit={handleSubmit}>
                 <label>
                     Город (регион) *
-                    <select value={form.city} onChange={update('city')} required>
+                    <select value={form.city} onChange={handleCityChange} required>
                         {RUSSIAN_CITIES.map((c) => (
                             <option key={c} value={c}>{c}</option>
                         ))}
@@ -124,13 +153,74 @@ const PredictForm = () => {
                     Комнат *
                     <input type="number" min="1" value={form.rooms} onChange={update('rooms')} required />
                 </label>
-                <label>Район<input value={form.district} onChange={update('district')} /></label>
-                <label>Этаж<input type="number" value={form.floor} onChange={update('floor')} /></label>
-                <label>Этажей в доме<input type="number" value={form.total_floors} onChange={update('total_floors')} /></label>
-                <label>Тип дома<input value={form.building_type} onChange={update('building_type')} placeholder="кирпичный" /></label>
-                <label>Год постройки<input type="number" value={form.year_built} onChange={update('year_built')} /></label>
-                <label>Застройщик<input value={form.developer} onChange={update('developer')} /></label>
-                <label>Ремонт<input value={form.repair_type} onChange={update('repair_type')} placeholder="евроремонт" /></label>
+                <FilterSelect
+                    label="Район"
+                    value={form.district}
+                    onChange={update('district')}
+                    options={filters.districts}
+                    loading={filtersLoading}
+                />
+                <label>
+                    Этаж
+                    <input
+                        type="number"
+                        min={MIN_FLOOR}
+                        max={MAX_FLOOR}
+                        value={form.floor}
+                        onChange={update('floor')}
+                        placeholder={`${MIN_FLOOR}–${MAX_FLOOR}`}
+                    />
+                </label>
+                <label>
+                    Этажей в доме
+                    <input
+                        type="number"
+                        min={MIN_TOTAL_FLOORS}
+                        max={MAX_TOTAL_FLOORS}
+                        value={form.total_floors}
+                        onChange={update('total_floors')}
+                        placeholder={`${MIN_TOTAL_FLOORS}–${MAX_TOTAL_FLOORS}`}
+                    />
+                </label>
+                <FilterSelect
+                    label="Тип дома"
+                    value={form.building_type}
+                    onChange={update('building_type')}
+                    options={filters.building_types}
+                    loading={filtersLoading}
+                />
+                <label>
+                    Год постройки
+                    <input
+                        type="number"
+                        min={MIN_YEAR_BUILT}
+                        max={MAX_YEAR_BUILT}
+                        value={form.year_built}
+                        onChange={update('year_built')}
+                        placeholder={`${MIN_YEAR_BUILT}–${MAX_YEAR_BUILT}`}
+                    />
+                </label>
+                <FilterSelect
+                    label="Застройщик"
+                    value={form.developer}
+                    onChange={update('developer')}
+                    options={filters.developers}
+                    loading={filtersLoading}
+                />
+                <FilterSelect
+                    label="Ремонт квартиры"
+                    value={form.repair_type}
+                    onChange={update('repair_type')}
+                    options={filters.repair_types}
+                    loading={filtersLoading}
+                />
+                <FilterSelect
+                    label="Ремонт дома"
+                    value={form.building_repair_type}
+                    onChange={update('building_repair_type')}
+                    options={filters.building_repair_types}
+                    loading={filtersLoading}
+                />
                 <button type="submit" className="btn-primary" disabled={loading}>
                     {loading ? 'Расчёт…' : 'Рассчитать прогноз'}
                 </button>

@@ -24,6 +24,7 @@ CATEGORICAL_FEATURES = [
     "building_type",
     "developer",
     "repair_type",
+    "building_repair_type",
 ]
 
 

@@ -68,7 +68,8 @@
 | building_type | текст | нет |
 | year_built | целое | нет |
 | developer | текст | нет |
-| repair_type | текст | нет |
+| repair_type | текст | нет | Ремонт квартиры |
+| building_repair_type | текст | нет | Ремонт дома |
 | price | рубли | да |
 | source_url | ссылка | нет |
 
@@ -342,7 +343,8 @@ URL: `http://localhost:8000` · исходный код: `ml-service/app/`
 | `metro` | Станция метро |
 | `building_type` | кирпичный, панельный, монолитный |
 | `developer` | Застройщик |
-| `repair_type` | евроремонт, косметический |
+| `repair_type` | Ремонт квартиры: евроремонт, косметический |
+| `building_repair_type` | Ремонт дома: капитальный, косметический |
 
 **Не используются в модели:** `address`, `source_url` — слишком уникальны, не несут обобщающей информации.
 
@@ -386,7 +388,7 @@ price = np.expm1(prediction)   # прогноз
 
 ```sql
 SELECT area, rooms, city, district, metro, floor, total_floors,
-       building_type, year_built, developer, repair_type, price
+       building_type, year_built, developer, repair_type, building_repair_type, price
 FROM properties
 WHERE price > 0 AND area > 0 AND rooms > 0
 ```
@@ -447,7 +449,7 @@ WHERE price > 0 AND area > 0 AND rooms > 0
 
 | Компонент | Метод | ML? |
 |-----------|--------|-----|
-| **Предсказанная цена** | Random Forest | ✅ |
+| **Предсказанная цена** | Random Forest + корректировки (`price_adjustments.py`: район, ремонт, застройщик, год) | ✅ + правила |
 | **Цена за м²** | predicted_price / area | ❌ формула |
 | **Средняя по городу** | AVG из PostgreSQL | ❌ статистика |
 | **% к рынку** | сравнение с средним | ❌ статистика |
@@ -494,6 +496,7 @@ WHERE price > 0 AND area > 0 AND rooms > 0
 | Файл | Назначение |
 |------|------------|
 | `ml-service/app/model_trainer.py` | Обучение, сохранение, predict |
+| `ml-service/app/price_adjustments.py` | Множители цены по району, ремонту, застройщику, году |
 | `ml-service/app/analytics.py` | Тренды, прогноз на 12 мес., сравнение с рынком |
 | `ml-service/app/regions_config.py` | Справочник городов и % роста |
 | `ml-service/app/main.py` | FastAPI, эндпоинты |

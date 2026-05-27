@@ -57,6 +57,8 @@ func main() {
 	r.Post("/api/login", authHandler.Login)
 	r.Get("/api/properties", propertyHandler.GetAll)
 	r.Get("/api/properties/{id}", propertyHandler.GetByID)
+	r.Get("/api/developers", propertyHandler.GetDevelopers)
+	r.Get("/api/city-filters", propertyHandler.GetCityFilters)
 	r.Post("/api/predict", predictHandler.Predict)
 	r.Get("/api/analytics/cities", analyticsHandler.Cities)
 	r.Get("/api/health/ml", analyticsHandler.HealthML)

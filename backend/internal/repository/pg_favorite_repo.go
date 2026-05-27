@@ -39,7 +39,7 @@ func (r *PgFavoriteRepo) GetPropertiesByUser(userID int) ([]*models.Property, er
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.address, p.city, p.district, p.metro, p.area, p.rooms, p.floor,
 			p.total_floors, p.building_type, p.year_built, p.developer, p.repair_type,
-			p.price, p.source_url, p.created_at, p.updated_at
+			p.building_repair_type, p.price, p.source_url, p.created_at, p.updated_at
 		FROM properties p
 		INNER JOIN favorites f ON f.property_id = p.id
 		WHERE f.user_id = $1

@@ -39,6 +39,41 @@ def city_stats_from_rows(rows: list[dict]) -> dict[str, dict[str, float]]:
     return stats
 
 
+def city_stats_for_profile(
+    rows: list[dict], target_area: float, target_rooms: int
+) -> dict[str, dict[str, float]]:
+    """Статистика по городам для квартир выбранного профиля.
+
+    Для площади используется сравнение по округлению до целого (например, 50.0 -> 50),
+    чтобы не терять записи из-за десятых долей.
+    """
+    if not rows:
+        return {}
+    df = pd.DataFrame(rows)
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+    df["area"] = pd.to_numeric(df["area"], errors="coerce")
+    df["rooms"] = pd.to_numeric(df["rooms"], errors="coerce")
+    df = df.dropna(subset=["price", "area", "rooms", "city"])
+    df = df[df["area"] > 0]
+    df = df[df["rooms"].astype(int) == int(target_rooms)]
+    df = df[df["area"].round().astype(int) == int(round(target_area))]
+    if df.empty:
+        return {}
+
+    df["price_per_sqm"] = df["price"] / df["area"]
+    stats: dict[str, dict[str, float]] = {}
+    for city, group in df.groupby("city"):
+        stats[str(city)] = {
+            "count": int(len(group)),
+            "avg_price": float(group["price"].mean()),
+            "avg_price_per_sqm": float(group["price_per_sqm"].mean()),
+            "median_price": float(group["price"].median()),
+            "min_price": float(group["price"].min()),
+            "max_price": float(group["price"].max()),
+        }
+    return stats
+
+
 def build_forecast_12m(current_price: float, city: str) -> list[dict[str, Any]]:
     rate = annual_growth_rate(city)
     monthly = (1 + rate) ** (1 / 12) - 1

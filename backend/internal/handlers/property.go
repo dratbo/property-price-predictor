@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dratbo/property-price-predictor/backend/internal/constants"
 	"github.com/dratbo/property-price-predictor/backend/internal/models"
 	"github.com/dratbo/property-price-predictor/backend/internal/repository"
+	"github.com/dratbo/property-price-predictor/backend/internal/validation"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -31,6 +33,14 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid fields", http.StatusBadRequest)
 		return
 	}
+	if err := validation.ValidateFloors(req.Floor, req.TotalFloors); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validation.ValidateYearBuilt(req.YearBuilt); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	prop := &models.Property{
 		Address:      req.Address,
@@ -44,8 +54,9 @@ func (h *PropertyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		BuildingType: req.BuildingType,
 		YearBuilt:    req.YearBuilt,
 		Developer:    req.Developer,
-		RepairType:   req.RepairType,
-		Price:        req.Price,
+		RepairType:         req.RepairType,
+		BuildingRepairType: req.BuildingRepairType,
+		Price:              req.Price,
 		SourceURL:    req.SourceURL,
 	}
 	if err := h.propertyRepo.Create(prop); err != nil {
@@ -92,6 +103,52 @@ func (h *PropertyHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		Limit:      limit,
 		TotalPages: totalPages,
 	})
+}
+
+func (h *PropertyHandler) GetCityFilters(w http.ResponseWriter, r *http.Request) {
+	city := r.URL.Query().Get("city")
+	if city == "" {
+		http.Error(w, "city is required", http.StatusBadRequest)
+		return
+	}
+	filters, err := h.propertyRepo.GetCityFilters(city)
+	if err != nil {
+		http.Error(w, "failed to get city filters", http.StatusInternalServerError)
+		return
+	}
+	if filters == nil {
+		filters = &models.CityFilters{}
+	}
+	ensureSlice := func(s []string) []string {
+		if s == nil {
+			return []string{}
+		}
+		return s
+	}
+	filters.Developers = ensureSlice(filters.Developers)
+	filters.Districts = constants.DistrictZones
+	filters.BuildingTypes = ensureSlice(filters.BuildingTypes)
+	filters.RepairTypes = ensureSlice(filters.RepairTypes)
+	filters.BuildingRepairTypes = ensureSlice(filters.BuildingRepairTypes)
+	json.NewEncoder(w).Encode(filters)
+}
+
+func (h *PropertyHandler) GetDevelopers(w http.ResponseWriter, r *http.Request) {
+	city := r.URL.Query().Get("city")
+	if city == "" {
+		http.Error(w, "city is required", http.StatusBadRequest)
+		return
+	}
+	filters, err := h.propertyRepo.GetCityFilters(city)
+	if err != nil {
+		http.Error(w, "failed to get developers", http.StatusInternalServerError)
+		return
+	}
+	developers := filters.Developers
+	if developers == nil {
+		developers = []string{}
+	}
+	json.NewEncoder(w).Encode(map[string][]string{"developers": developers})
 }
 
 func (h *PropertyHandler) GetByID(w http.ResponseWriter, r *http.Request) {

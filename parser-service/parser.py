@@ -24,23 +24,23 @@ DATABASE_URL = os.getenv(
 DEMO_LISTINGS = [
     {"address": "ул. Садовая, 12", "city": "Москва", "district": "Таганский", "metro": "Таганская",
      "area": 47.0, "rooms": 2, "floor": 4, "total_floors": 10, "building_type": "кирпичный",
-     "year_built": 2008, "developer": "ПИК", "repair_type": "евроремонт", "price": 11500000,
+     "year_built": 2008, "developer": "ПИК", "repair_type": "евроремонт", "building_repair_type": "капитальный", "price": 11500000,
      "source_url": "https://demo.cian.ru/msk-parser-1"},
     {"address": "ул. Гагарина, 3", "city": "Казань", "district": "Советский", "metro": None,
      "area": 36.5, "rooms": 1, "floor": 7, "total_floors": 16, "building_type": "монолитный",
-     "year_built": 2019, "developer": "СЗ Столица", "repair_type": "чистовая", "price": 5100000,
+     "year_built": 2019, "developer": "СЗ Столица", "repair_type": "чистовая", "building_repair_type": "свежий", "price": 5100000,
      "source_url": "https://demo.cian.ru/kzn-parser-1"},
     {"address": "ул. Красный пр., 180", "city": "Новосибирск", "district": "Центральный", "metro": "Красный проспект",
      "area": 56.0, "rooms": 2, "floor": 8, "total_floors": 14, "building_type": "монолитный",
-     "year_built": 2010, "developer": None, "repair_type": "евроремонт", "price": 5500000,
+     "year_built": 2010, "developer": None, "repair_type": "евроремонт", "building_repair_type": "косметический", "price": 5500000,
      "source_url": "https://demo.cian.ru/nsk-parser-1"},
     {"address": "ул. Малышева, 12", "city": "Екатеринбург", "district": "Ленинский", "metro": "Геологическая",
      "area": 54.0, "rooms": 2, "floor": 8, "total_floors": 16, "building_type": "монолитный",
-     "year_built": 2015, "developer": None, "repair_type": "евроремонт", "price": 7200000,
+     "year_built": 2015, "developer": None, "repair_type": "евроремонт", "building_repair_type": "капитальный", "price": 7200000,
      "source_url": "https://demo.cian.ru/ekb-parser-1"},
     {"address": "ул. Красная, 120", "city": "Краснодар", "district": "Центральный", "metro": None,
      "area": 48.0, "rooms": 2, "floor": 5, "total_floors": 10, "building_type": "кирпичный",
-     "year_built": 2012, "developer": None, "repair_type": "евроремонт", "price": 6800000,
+     "year_built": 2012, "developer": None, "repair_type": "евроремонт", "building_repair_type": "без ремонта", "price": 6800000,
      "source_url": "https://demo.cian.ru/krd-parser-1"},
 ]
 
@@ -55,11 +55,11 @@ def upsert_property(conn, listing: dict) -> bool:
             """
             INSERT INTO properties (
                 address, city, district, metro, area, rooms, floor, total_floors,
-                building_type, year_built, developer, repair_type, price, source_url
+                building_type, year_built, developer, repair_type, building_repair_type, price, source_url
             ) VALUES (
                 %(address)s, %(city)s, %(district)s, %(metro)s, %(area)s, %(rooms)s,
                 %(floor)s, %(total_floors)s, %(building_type)s, %(year_built)s,
-                %(developer)s, %(repair_type)s, %(price)s, %(source_url)s
+                %(developer)s, %(repair_type)s, %(building_repair_type)s, %(price)s, %(source_url)s
             )
             ON CONFLICT (source_url) WHERE source_url IS NOT NULL DO NOTHING
             RETURNING id
@@ -103,6 +103,7 @@ def parse_with_cianparser(city: str, limit: int = 15) -> list[dict]:
                 "year_built": item.get("build_year"),
                 "developer": item.get("developer"),
                 "repair_type": item.get("repair"),
+                "building_repair_type": item.get("building_repair") or item.get("house_repair"),
                 "price": float(item.get("price") or 0),
                 "source_url": url,
             }

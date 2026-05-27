@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dratbo/property-price-predictor/backend/internal/models"
+	"github.com/dratbo/property-price-predictor/backend/internal/validation"
 )
 
 type PredictHandler struct {
@@ -31,6 +32,14 @@ func (h *PredictHandler) Predict(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Area <= 0 || req.Rooms <= 0 || req.City == "" {
 		http.Error(w, "area, rooms and city are required", http.StatusBadRequest)
+		return
+	}
+	if err := validation.ValidateFloors(req.Floor, req.TotalFloors); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := validation.ValidateYearBuilt(req.YearBuilt); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
