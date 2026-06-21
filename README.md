@@ -718,7 +718,7 @@ npm run dev
   </tr>
 </table>
 
-
+Это основная страница, здесь мы видим не заполненные фильтры и недвижимость.
 
 <table cellpadding="10">
   <tr>
@@ -726,6 +726,81 @@ npm run dev
   </tr>
 </table>
 
+После ввода данных в фильтр, нам сразу выскакивакт из БД недвижимость, которая подходит под указанный фильтр.
+
+### Избранное
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1798" height="858" alt="image" src="https://github.com/user-attachments/assets/2a8608b9-06d8-428f-b28b-3d210192f3c0" /></td>
+  </tr>
+</table>
+
+Любую недвижимость можно добавить в "Избранное", где можно узнать дополнительную информацию.
+
+### Дополнительная информация
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1798" height="858" alt="image" src="https://github.com/user-attachments/assets/2a8608b9-06d8-428f-b28b-3d210192f3c0" /></td>
+  </tr>
+</table>
+
+При нажатии на недвижимость можно увидеть всю информацию.
+
+### Прогноз цены
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1796" height="859" alt="image" src="https://github.com/user-attachments/assets/d9021263-b032-41fc-a001-d5cf723e7ec1" /></td>
+  </tr>
+</table>
+
+Во вкладке "Избранное" можно нажать на кнопку "Прогноз" у любой недвижимости. Все данные этой недвижимости сразу внесутся в фильтр.
+
+### Рассчитанный прогноз
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1758" height="851" alt="image" src="https://github.com/user-attachments/assets/9dc106e6-138c-4fd6-8167-11dfa74ae0a4" /></td>
+  </tr>
+</table>
+
+При нажатии на "Рассчитать прогноз" появится информация по данным из фильтра. 
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1742" height="839" alt="image" src="https://github.com/user-attachments/assets/4565284f-7caa-4427-bb57-454a0d0e05a1" /></td>
+  </tr>
+</table>
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1782" height="858" alt="image" src="https://github.com/user-attachments/assets/a1fe55b8-f219-48c9-91b7-c2a777dd7539" /></td>
+  </tr>
+</table>
+
+### Прогноз по интересующим данным
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1744" height="840" alt="image" src="https://github.com/user-attachments/assets/075f4414-65de-4d7e-92fd-14df33be1da8" /></td>
+  </tr>
+</table>
+
+Пользователь может вносить интересующие его данные в фильтры, таким образом он сможет узнать прогноз подходящей для него недвижимости.
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1768" height="852" alt="image" src="https://github.com/user-attachments/assets/48f7cd2b-acec-4c44-9636-66305d828a44" /></td>
+  </tr>
+</table>
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1751" height="841" alt="image" src="https://github.com/user-attachments/assets/2a38cdce-dde9-4b5a-9668-468dec1e2fc6" /></td>
+  </tr>
+</table>
 
 
 ## Автор
