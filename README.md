@@ -27,6 +27,7 @@
 - [Переменные окружения](#переменные-окружения)
 - [Этапы реализации](#этапы-реализации)
 - [Демонстрация для защиты](#демонстрация-для-защиты)
+- [Демонстрация работы](#демонстрация-работы)
 
 ---
 
@@ -690,6 +691,42 @@ npm run dev
 7. Показать http://localhost:8000/health — ML работает.
 
 ---
+
+## Демонстрация работы
+
+### Регистрация
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="982" height="678" alt="image" src="https://github.com/user-attachments/assets/37e770e8-8beb-4426-8fe2-0c3ddcd9e7be" /></td>
+  </tr>
+</table>
+
+### Вход
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="972" height="678" alt="image" src="https://github.com/user-attachments/assets/c5722044-ebbd-455e-b51b-9fbf093a509c" /></td>
+  </tr>
+</table>
+
+### Основная страница
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1778" height="862" alt="image" src="https://github.com/user-attachments/assets/079dc07e-d2e0-46b7-aa3f-d3d47d4b8efb" /></td>
+  </tr>
+</table>
+
+
+
+<table cellpadding="10">
+  <tr>
+    <td><img width="1760" height="850" alt="image" src="https://github.com/user-attachments/assets/e8280959-45a8-46c3-bd42-669f3d30e8a8" /></td>
+  </tr>
+</table>
+
+
 
 ## Автор
 
